@@ -4,6 +4,34 @@ Testing augmentation for Rust binaries: screenshot capture, video recording, int
 
 Used by cochranblock, kova, approuter, oakilydokily, whyyoulying, wowasticker for test binaries (`*-test`).
 
+## Wire / Architecture
+
+```mermaid
+flowchart TB
+    subgraph Workspace
+        App[app binary]
+        Test["*-test binary"]
+    end
+
+    subgraph exopack
+        Screenshot[screenshot]
+        Interface[interface]
+        Mock[mock]
+        Video[video]
+        Triple[triple_sims]
+        Devtools[devtools]
+    end
+
+    App --> Core[shared lib]
+    Test --> Core
+    Test --> exopack
+
+    Screenshot --> |HTML→SVG→PNG| Capture
+    Interface --> |spawn + HTTP| Harness
+    Mock --> |WireMock| Stub
+    Triple --> |run 3×| AllPass
+```
+
 ## Features
 
 - **screenshot** — Pure Rust HTML→SVG→PNG capture (no Chrome)
