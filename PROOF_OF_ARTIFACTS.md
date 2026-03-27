@@ -53,8 +53,8 @@ flowchart TD
 cargo run -p cochranblock --bin cochranblock-test --features tests
 # Runs: clippy → TRIPLE SIMS (3 passes) → exit 0 or 1
 
-# exopack standalone:
-cargo run -p exopack -- live-demo <project_dir>
+# exopack standalone (requires triple_sims feature for the binary):
+cargo run -p exopack --features triple_sims -- live-demo <project_dir>
 ```
 
 ---

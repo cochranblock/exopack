@@ -31,7 +31,7 @@ pub fn f61_with_args(project_dir: &Path, n: u32, args: &[&str]) -> (bool, String
     (true, String::new())
 }
 
-/// Discover -test binary name from Cargo.toml. Returns first [[bin]] with name ending in "-test".
+/// f63 = discover_test_bin. Discover -test binary name from Cargo.toml. Returns first [[bin]] with name ending in "-test".
 pub fn f63_discover_test_bin(project_dir: &Path) -> Option<String> {
     let manifest = project_dir.join("Cargo.toml");
     let content = std::fs::read_to_string(&manifest).ok()?;
