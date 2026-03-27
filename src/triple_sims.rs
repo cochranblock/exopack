@@ -100,6 +100,49 @@ pub fn f62_live_demo(
     run.status()
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+
+    #[test]
+    fn discover_test_bin_finds_test_binary() {
+        let dir = std::env::temp_dir().join("exopack_test_discover");
+        let _ = std::fs::create_dir_all(&dir);
+        let manifest = dir.join("Cargo.toml");
+        let mut f = std::fs::File::create(&manifest).unwrap();
+        writeln!(f, "[package]\nname = \"foo\"\nversion = \"0.1.0\"\n").unwrap();
+        writeln!(f, "[[bin]]\nname = \"foo-test\"\npath = \"src/bin/test.rs\"").unwrap();
+        drop(f);
+
+        assert_eq!(f63_discover_test_bin(&dir), Some("foo-test".to_string()));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn discover_test_bin_returns_none_without_test_binary() {
+        let dir = std::env::temp_dir().join("exopack_test_discover_none");
+        let _ = std::fs::create_dir_all(&dir);
+        let manifest = dir.join("Cargo.toml");
+        let mut f = std::fs::File::create(&manifest).unwrap();
+        writeln!(f, "[package]\nname = \"bar\"\nversion = \"0.1.0\"\n").unwrap();
+        writeln!(f, "[[bin]]\nname = \"bar\"\npath = \"src/main.rs\"").unwrap();
+        drop(f);
+
+        assert_eq!(f63_discover_test_bin(&dir), None);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn discover_test_bin_missing_manifest() {
+        let dir = std::env::temp_dir().join("exopack_test_discover_missing");
+        let _ = std::fs::create_dir_all(&dir);
+        let _ = std::fs::remove_file(dir.join("Cargo.toml"));
+        assert_eq!(f63_discover_test_bin(&dir), None);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}
+
 /// f60 = triple_sims_run. Runs `run_once` 3 times. Returns true iff all pass.
 /// Prints pass count and timing. Use from test binary: exit 0 when true.
 pub async fn f60<F, Fut>(run_once: F) -> bool

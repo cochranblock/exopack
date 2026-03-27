@@ -1,5 +1,6 @@
 // Copyright (c) 2026 The Cochran Block. All rights reserved.
-//! f70 = screenshot — out_dir, theme, capture_project for TRIPLE SIMS visual verification.
+//! f70 = screenshot — out_dir, theme, capture_project, compare_screenshots, generate_diff_image.
+//! Visual regression: pixel-level diff (f71) and red-highlight diff image (f72).
 
 use std::path::PathBuf;
 
@@ -94,4 +95,176 @@ async fn capture_placeholder(
 fn write_placeholder_png(path: &std::path::Path) -> Result<(), String> {
     let img = image::RgbaImage::from_fn(100, 100, |_, _| image::Rgba([200, 200, 200, 255]));
     img.save(path).map_err(|e| e.to_string())
+}
+
+/// Result of comparing two screenshots pixel-by-pixel.
+pub struct CompareResult {
+    /// True if diff_pct is below the threshold.
+    pub matches: bool,
+    /// Percentage of pixels that differ (0.0–100.0).
+    pub diff_pct: f64,
+    /// Total pixels compared.
+    pub total_pixels: u32,
+    /// Number of differing pixels.
+    pub diff_pixels: u32,
+}
+
+/// f71 = compare_screenshots. Pure Rust pixel-level diff between two PNGs.
+/// `tolerance` = per-channel difference allowed before counting as changed (e.g. 10 for anti-aliasing).
+/// `threshold` = max diff_pct to consider a match (e.g. 1.0 = 1%).
+pub fn compare_screenshots(
+    actual: &std::path::Path,
+    baseline: &std::path::Path,
+    tolerance: u8,
+    threshold: f64,
+) -> Result<CompareResult, String> {
+    let img_a = image::open(actual).map_err(|e| format!("open {}: {}", actual.display(), e))?;
+    let img_b = image::open(baseline).map_err(|e| format!("open {}: {}", baseline.display(), e))?;
+
+    let rgba_a = img_a.to_rgba8();
+    let rgba_b = img_b.to_rgba8();
+
+    // Resize actual to baseline dimensions if they differ
+    let (w, h) = (rgba_b.width(), rgba_b.height());
+    let rgba_a = if rgba_a.dimensions() != (w, h) {
+        image::imageops::resize(&rgba_a, w, h, image::imageops::FilterType::Lanczos3)
+    } else {
+        rgba_a
+    };
+
+    let total_pixels = w * h;
+    let mut diff_pixels = 0u32;
+    let tol = tolerance as i16;
+
+    for (pa, pb) in rgba_a.pixels().zip(rgba_b.pixels()) {
+        let differs = pa.0[..3].iter().zip(pb.0[..3].iter()).any(|(&a, &b)| {
+            (a as i16 - b as i16).abs() > tol
+        });
+        if differs {
+            diff_pixels += 1;
+        }
+    }
+
+    let diff_pct = if total_pixels == 0 {
+        0.0
+    } else {
+        (diff_pixels as f64 / total_pixels as f64) * 100.0
+    };
+
+    Ok(CompareResult {
+        matches: diff_pct <= threshold,
+        diff_pct,
+        total_pixels,
+        diff_pixels,
+    })
+}
+
+/// f72 = generate_diff_image. Creates a visual diff PNG highlighting changed pixels in red.
+pub fn generate_diff_image(
+    actual: &std::path::Path,
+    baseline: &std::path::Path,
+    out: &std::path::Path,
+    tolerance: u8,
+) -> Result<(), String> {
+    let img_a = image::open(actual).map_err(|e| format!("open {}: {}", actual.display(), e))?;
+    let img_b = image::open(baseline).map_err(|e| format!("open {}: {}", baseline.display(), e))?;
+
+    let rgba_a = img_a.to_rgba8();
+    let rgba_b = img_b.to_rgba8();
+
+    let (w, h) = (rgba_b.width(), rgba_b.height());
+    let rgba_a = if rgba_a.dimensions() != (w, h) {
+        image::imageops::resize(&rgba_a, w, h, image::imageops::FilterType::Lanczos3)
+    } else {
+        rgba_a
+    };
+
+    let tol = tolerance as i16;
+    let mut diff_img = image::RgbaImage::new(w, h);
+    for (x, y, pixel) in diff_img.enumerate_pixels_mut() {
+        let pa = rgba_a.get_pixel(x, y);
+        let pb = rgba_b.get_pixel(x, y);
+        let differs = pa.0[..3].iter().zip(pb.0[..3].iter()).any(|(&a, &b)| {
+            (a as i16 - b as i16).abs() > tol
+        });
+        *pixel = if differs {
+            image::Rgba([255, 0, 0, 200])
+        } else {
+            image::Rgba([pb.0[0], pb.0[1], pb.0[2], 80])
+        };
+    }
+
+    diff_img.save(out).map_err(|e| format!("save {}: {}", out.display(), e))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn out_dir_contains_os_and_project() {
+        let p = out_dir("myproject");
+        let s = p.to_string_lossy();
+        assert!(s.contains(std::env::consts::OS), "path should contain OS: {}", s);
+        assert!(s.ends_with("myproject"), "path should end with project name: {}", s);
+    }
+
+    #[test]
+    fn compare_identical_images() {
+        let dir = std::env::temp_dir().join("exopack_test_compare");
+        let _ = std::fs::create_dir_all(&dir);
+        let path_a = dir.join("a.png");
+        let path_b = dir.join("b.png");
+
+        let img = image::RgbaImage::from_fn(10, 10, |_, _| image::Rgba([100, 150, 200, 255]));
+        img.save(&path_a).unwrap();
+        img.save(&path_b).unwrap();
+
+        let result = compare_screenshots(&path_a, &path_b, 10, 1.0).unwrap();
+        assert!(result.matches);
+        assert_eq!(result.diff_pct, 0.0);
+        assert_eq!(result.diff_pixels, 0);
+        assert_eq!(result.total_pixels, 100);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn compare_different_images() {
+        let dir = std::env::temp_dir().join("exopack_test_diff");
+        let _ = std::fs::create_dir_all(&dir);
+        let path_a = dir.join("a.png");
+        let path_b = dir.join("b.png");
+
+        let white = image::RgbaImage::from_fn(10, 10, |_, _| image::Rgba([255, 255, 255, 255]));
+        let black = image::RgbaImage::from_fn(10, 10, |_, _| image::Rgba([0, 0, 0, 255]));
+        white.save(&path_a).unwrap();
+        black.save(&path_b).unwrap();
+
+        let result = compare_screenshots(&path_a, &path_b, 10, 1.0).unwrap();
+        assert!(!result.matches);
+        assert_eq!(result.diff_pct, 100.0);
+        assert_eq!(result.diff_pixels, 100);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn diff_image_generates_file() {
+        let dir = std::env::temp_dir().join("exopack_test_diffimg");
+        let _ = std::fs::create_dir_all(&dir);
+        let path_a = dir.join("a.png");
+        let path_b = dir.join("b.png");
+        let path_d = dir.join("diff.png");
+
+        let white = image::RgbaImage::from_fn(10, 10, |_, _| image::Rgba([255, 255, 255, 255]));
+        let black = image::RgbaImage::from_fn(10, 10, |_, _| image::Rgba([0, 0, 0, 255]));
+        white.save(&path_a).unwrap();
+        black.save(&path_b).unwrap();
+
+        generate_diff_image(&path_a, &path_b, &path_d, 10).unwrap();
+        assert!(path_d.exists());
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }

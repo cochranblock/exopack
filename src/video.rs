@@ -53,3 +53,28 @@ impl VideoRecorder for NoopRecorder {
 pub fn create_recorder() -> Box<dyn VideoRecorder> {
     Box::new(NoopRecorder)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn noop_recorder_start_succeeds() {
+        let mut rec = NoopRecorder;
+        assert!(rec.start().is_ok());
+    }
+
+    #[test]
+    fn noop_recorder_stop_returns_error() {
+        let mut rec = NoopRecorder;
+        let out = std::path::Path::new("/tmp/fake.mp4");
+        assert!(rec.stop(out).is_err());
+    }
+
+    #[test]
+    fn create_recorder_returns_noop() {
+        let mut rec = create_recorder();
+        assert!(rec.start().is_ok());
+        assert!(rec.stop(std::path::Path::new("/tmp/fake.mp4")).is_err());
+    }
+}

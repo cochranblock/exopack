@@ -40,7 +40,7 @@ flowchart TD
 |----------|-------------|
 | TRIPLE SIMS | Run test suite 3x sequentially — all must pass. Detects race conditions, non-determinism, flaky tests |
 | Two-Binary Model | Production binary has zero test deps. Test binary is self-contained quality gate |
-| Screenshot Capture | Pure Rust rendering for CI. Optional Chromium DevTools for full-page visual verification |
+| Screenshot Capture | Pure Rust rendering for CI. Optional Chromium DevTools for full-page visual verification. Pixel-level diff + red-highlight diff image generation |
 | Mock Server | WireMock integration on random ports — isolated integration tests without real APIs |
 | Demo Record/Replay | Capture WebClick, WebInput, ApiCall, EguiSend actions as JSON for automated replay |
 | Baked Demo | Zero-user-input automation: CLI subcommands + all HTTP endpoints exercised |

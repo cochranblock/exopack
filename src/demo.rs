@@ -88,3 +88,59 @@ pub fn demo_dir() -> std::path::PathBuf {
                 .join("demos")
         })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn demo_record_round_trip() {
+        let dir = std::env::temp_dir().join("exopack_test_demo_rt");
+        let _ = std::fs::create_dir_all(&dir);
+
+        let mut rec = DemoRecord::new("test-demo", "web");
+        rec.push(DemoAction::WebClick {
+            selector: "#btn".into(),
+            ts_ms: 100,
+        });
+        rec.push(DemoAction::ApiCall {
+            method: "POST".into(),
+            path: "/api/test".into(),
+            body_summary: Some("hello".into()),
+        });
+
+        let path = rec.save(&dir).unwrap();
+        assert!(path.exists());
+
+        let loaded = DemoRecord::load(&path).unwrap();
+        assert_eq!(loaded.name, "test-demo");
+        assert_eq!(loaded.source, "web");
+        assert_eq!(loaded.actions.len(), 2);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn demo_action_serialize_tagged() {
+        let action = DemoAction::EguiSend {
+            text: "hello kova".into(),
+        };
+        let json = serde_json::to_string(&action).unwrap();
+        assert!(json.contains("\"kind\":\"egui_send\""));
+        assert!(json.contains("\"text\":\"hello kova\""));
+    }
+
+    #[test]
+    fn demo_record_sanitizes_filename() {
+        let dir = std::env::temp_dir().join("exopack_test_demo_safe");
+        let _ = std::fs::create_dir_all(&dir);
+
+        let rec = DemoRecord::new("test/bad:name", "egui");
+        let path = rec.save(&dir).unwrap();
+        let filename = path.file_name().unwrap().to_string_lossy();
+        assert!(!filename.contains('/'));
+        assert!(!filename.contains(':'));
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}

@@ -50,11 +50,11 @@ flowchart TB
 
 ## Features
 
-- **screenshot** — Pure Rust HTML→SVG→PNG capture (no Chrome), with devtools fallback
+- **screenshot** — Pure Rust HTML→SVG→PNG capture (no Chrome), with devtools fallback. Visual regression: pixel diff + diff image generation
 - **interface** — Test server harness: random-port binding, HTTP client with cookie store
 - **triple_sims** — Run test runner 3 times; all must pass. Includes live-demo and test-bin discovery
 - **devtools** — Headless Chromium via CDP: console error check, full-page screenshots (WASM-aware)
-- **mock** — WireMock for on-demand API mocking (GET text/JSON)
+- **mock** — WireMock for on-demand API mocking (GET/POST text/JSON, custom status codes)
 - **video** — Screen capture trait + xcap impl (always compiled; xcap requires `video` feature)
 - **demo** — Action script recording: WebClick, WebInput, ApiCall, EguiSend → JSON replay
 - **baked_demo** — Zero-input automation: exercises all CLI subcommands + HTTP endpoints
