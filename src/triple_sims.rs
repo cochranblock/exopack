@@ -105,10 +105,16 @@ mod tests {
     use super::*;
     use std::io::Write;
 
+    fn test_dir(name: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("{}_{}", name, std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
     #[test]
     fn discover_test_bin_finds_test_binary() {
-        let dir = std::env::temp_dir().join("exopack_test_discover");
-        let _ = std::fs::create_dir_all(&dir);
+        let dir = test_dir("exopack_test_discover");
         let manifest = dir.join("Cargo.toml");
         let mut f = std::fs::File::create(&manifest).unwrap();
         writeln!(f, "[package]\nname = \"foo\"\nversion = \"0.1.0\"\n").unwrap();
@@ -121,8 +127,7 @@ mod tests {
 
     #[test]
     fn discover_test_bin_returns_none_without_test_binary() {
-        let dir = std::env::temp_dir().join("exopack_test_discover_none");
-        let _ = std::fs::create_dir_all(&dir);
+        let dir = test_dir("exopack_test_discover_none");
         let manifest = dir.join("Cargo.toml");
         let mut f = std::fs::File::create(&manifest).unwrap();
         writeln!(f, "[package]\nname = \"bar\"\nversion = \"0.1.0\"\n").unwrap();
@@ -135,8 +140,7 @@ mod tests {
 
     #[test]
     fn discover_test_bin_missing_manifest() {
-        let dir = std::env::temp_dir().join("exopack_test_discover_missing");
-        let _ = std::fs::create_dir_all(&dir);
+        let dir = test_dir("exopack_test_discover_missing");
         let _ = std::fs::remove_file(dir.join("Cargo.toml"));
         assert_eq!(f63_discover_test_bin(&dir), None);
         let _ = std::fs::remove_dir_all(&dir);

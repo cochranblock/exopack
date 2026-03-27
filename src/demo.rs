@@ -93,10 +93,16 @@ pub fn demo_dir() -> std::path::PathBuf {
 mod tests {
     use super::*;
 
+    fn test_dir(name: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("{}_{}", name, std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
     #[test]
     fn demo_record_round_trip() {
-        let dir = std::env::temp_dir().join("exopack_test_demo_rt");
-        let _ = std::fs::create_dir_all(&dir);
+        let dir = test_dir("exopack_test_demo_rt");
 
         let mut rec = DemoRecord::new("test-demo", "web");
         rec.push(DemoAction::WebClick {
@@ -132,8 +138,7 @@ mod tests {
 
     #[test]
     fn demo_record_sanitizes_filename() {
-        let dir = std::env::temp_dir().join("exopack_test_demo_safe");
-        let _ = std::fs::create_dir_all(&dir);
+        let dir = test_dir("exopack_test_demo_safe");
 
         let rec = DemoRecord::new("test/bad:name", "egui");
         let path = rec.save(&dir).unwrap();

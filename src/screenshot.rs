@@ -467,6 +467,14 @@ async fn capture_to_dir(
 mod tests {
     use super::*;
 
+    /// Unique temp dir per test to avoid cross-process races.
+    fn test_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("{}_{}", name, std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
     #[test]
     fn out_dir_contains_os_and_project() {
         let p = out_dir("myproject");
@@ -477,8 +485,7 @@ mod tests {
 
     #[test]
     fn compare_identical_images() {
-        let dir = std::env::temp_dir().join("exopack_test_compare");
-        let _ = std::fs::create_dir_all(&dir);
+        let dir = test_dir("exopack_test_compare");
         let path_a = dir.join("a.png");
         let path_b = dir.join("b.png");
 
@@ -497,8 +504,7 @@ mod tests {
 
     #[test]
     fn compare_different_images() {
-        let dir = std::env::temp_dir().join("exopack_test_diff");
-        let _ = std::fs::create_dir_all(&dir);
+        let dir = test_dir("exopack_test_diff");
         let path_a = dir.join("a.png");
         let path_b = dir.join("b.png");
 
@@ -517,8 +523,7 @@ mod tests {
 
     #[test]
     fn compare_within_tolerance() {
-        let dir = std::env::temp_dir().join("exopack_test_tolerance");
-        let _ = std::fs::create_dir_all(&dir);
+        let dir = test_dir("exopack_test_tolerance");
         let path_a = dir.join("a.png");
         let path_b = dir.join("b.png");
 
@@ -542,8 +547,7 @@ mod tests {
 
     #[test]
     fn compare_resizes_mismatched_dimensions() {
-        let dir = std::env::temp_dir().join("exopack_test_resize");
-        let _ = std::fs::create_dir_all(&dir);
+        let dir = test_dir("exopack_test_resize");
         let path_a = dir.join("a.png");
         let path_b = dir.join("b.png");
 
@@ -591,8 +595,7 @@ mod tests {
 
     #[test]
     fn diff_image_generates_file() {
-        let dir = std::env::temp_dir().join("exopack_test_diffimg");
-        let _ = std::fs::create_dir_all(&dir);
+        let dir = test_dir("exopack_test_diffimg");
         let path_a = dir.join("a.png");
         let path_b = dir.join("b.png");
         let path_d = dir.join("diff.png");
