@@ -20,6 +20,7 @@ flowchart TD
     Exopack --> Interface[Interface: Random port + HTTP client]
     Exopack --> Video[Video: xcap screen recording]
     Exopack --> Demo[Demo: Record/replay user actions]
+    Exopack --> BakedDemo[BakedDemo: Zero-input automation]
 ```
 
 ## Build Output
@@ -27,7 +28,7 @@ flowchart TD
 | Metric | Value |
 |--------|-------|
 | Modules | 8 (triple_sims, screenshot, devtools, mock, interface, video, demo, baked_demo) |
-| Feature gates | 8 — each module optional, zero mandatory bloat |
+| Feature gates | 7 feature-gated + video (always compiled, xcap optional) |
 | Projects using exopack | 5+ (cochranblock, kova, oakilydokily, whyyoulying, wowasticker) |
 | Architecture doc | 2,286 lines — testing philosophy, patterns, anti-patterns |
 | TRIPLE SIMS passes | 3 sequential runs, all must pass (eliminates flaky tests) |

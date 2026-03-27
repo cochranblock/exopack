@@ -1,5 +1,5 @@
 // Copyright (c) 2026 The Cochran Block. All rights reserved.
-//! exopack — testing augmentation: screenshot, video, interfaces, API mocks, triple sims.
+//! exopack — testing augmentation: screenshot, video, interfaces, API mocks, triple sims, demo, baked_demo.
 
 #![allow(non_camel_case_types, non_snake_case, dead_code, unused_imports)]
 

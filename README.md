@@ -44,6 +44,8 @@ flowchart TB
     Interface --> |spawn + HTTP| Harness
     Mock --> |WireMock| Stub
     Triple --> |run 3×| AllPass
+    Demo --> |record/replay| JSON
+    BakedDemo --> |CLI + HTTP| Verify
 ```
 
 ## Features
