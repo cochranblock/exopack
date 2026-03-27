@@ -31,7 +31,6 @@ Build rough draft first
 | cochranblock | cochranblock-test | cochranblock |
 | oakilydokily | oakilydokily-test | oakilydokily |
 | approuter | approuter-test | approuter |
-| approuter | approuter-test | approuter |
 | kova | kova-test | kova |
 
 ## Rule

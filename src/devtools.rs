@@ -1,6 +1,6 @@
 // Copyright (c) 2026 The Cochran Block. All rights reserved.
 //! DevTools: headless browser console check via CDP. Catches JS errors, syntax errors, console.error.
-//! f63 = capture_screenshots. Real browser screenshots including WASM canvas.
+//! f75 = capture_screenshots. Real browser screenshots including WASM canvas.
 //!
 //! When Chrome is not installed, the fetcher downloads Chromium to ~/.cache/chromiumoxide.
 //! On Linux, install libnspr4 and libnss3 (e.g. `apt install libnspr4 libnss3`) for the fetched binary to run.
@@ -37,7 +37,7 @@ async fn browser_config() -> Result<chromiumoxide::BrowserConfig, String> {
         .map_err(|e| format!("devtools config: {}", e))
 }
 
-/// f62 = check_console_errors. Navigates to each URL, collects console errors. Returns errors or empty.
+/// f74 = check_console_errors. Navigates to each URL, collects console errors. Returns errors or empty.
 pub async fn check_console_errors(base: &str, paths: &[&str]) -> Result<Vec<String>, String> {
     let base = base.trim_end_matches('/');
     let config = browser_config().await?;
@@ -65,7 +65,7 @@ pub async fn check_console_errors(base: &str, paths: &[&str]) -> Result<Vec<Stri
     Ok(all_errors)
 }
 
-/// f63 = capture_screenshots. Launches headless Chromium, navigates to each URL, waits for render (WASM),
+/// f75 = capture_screenshots. Launches headless Chromium, navigates to each URL, waits for render (WASM),
 /// saves PNG to out_dir. Returns true if all succeed.
 pub async fn capture_screenshots(
     base: &str,

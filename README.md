@@ -32,6 +32,8 @@ flowchart TB
         Video[video]
         Triple[triple_sims]
         Devtools[devtools]
+        Demo[demo]
+        BakedDemo[baked_demo]
     end
 
     App --> Core[shared lib]
@@ -46,12 +48,14 @@ flowchart TB
 
 ## Features
 
-- **screenshot** — Pure Rust HTML→SVG→PNG capture (no Chrome)
-- **interface** — Test server harness, HTTP client helpers
-- **triple_sims** — Run test runner 3 times; all must pass
-- **devtools** — Headless browser console check via CDP
-- **mock** — WireMock for on-demand API mocking
-- **video** — xcap screen capture + recording
+- **screenshot** — Pure Rust HTML→SVG→PNG capture (no Chrome), with devtools fallback
+- **interface** — Test server harness: random-port binding, HTTP client with cookie store
+- **triple_sims** — Run test runner 3 times; all must pass. Includes live-demo and test-bin discovery
+- **devtools** — Headless Chromium via CDP: console error check, full-page screenshots (WASM-aware)
+- **mock** — WireMock for on-demand API mocking (GET text/JSON)
+- **video** — Screen capture trait + xcap impl (always compiled; xcap requires `video` feature)
+- **demo** — Action script recording: WebClick, WebInput, ApiCall, EguiSend → JSON replay
+- **baked_demo** — Zero-input automation: exercises all CLI subcommands + HTTP endpoints
 
 ## Docs
 

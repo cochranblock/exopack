@@ -1,9 +1,9 @@
 // Copyright (c) 2026 The Cochran Block. All rights reserved.
-//! f61 = screenshot — out_dir, theme, capture_project for TRIPLE SIMS visual verification.
+//! f70 = screenshot — out_dir, theme, capture_project for TRIPLE SIMS visual verification.
 
 use std::path::PathBuf;
 
-/// f61_out_dir. Returns cache dir for screenshots: ~/.cache/screenshots/linux/{project}
+/// f70_out_dir. Returns cache dir for screenshots: ~/.cache/screenshots/{os}/{project}
 pub fn out_dir(project: &str) -> PathBuf {
     let base = dirs::cache_dir()
         .unwrap_or_else(|| std::path::PathBuf::from("."))
@@ -18,12 +18,12 @@ pub struct Theme {
     _placeholder: (),
 }
 
-/// f61_theme_cochranblock. Cochranblock block-diagram theme.
+/// f70_theme_cochranblock. Cochranblock block-diagram theme.
 pub fn theme_cochranblock() -> Theme {
     Theme { _placeholder: () }
 }
 
-/// f61_capture_project. Fetches each page, renders via headless browser (devtools) or placeholder.
+/// f70_capture_project. Fetches each page, renders via headless browser (devtools) or placeholder.
 /// Returns true if all captures succeed.
 pub async fn capture_project(
     base: &str,
