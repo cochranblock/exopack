@@ -1,16 +1,22 @@
 // Copyright (c) 2026 The Cochran Block. All rights reserved.
-//! f70 = screenshot — capture, compare, diff, visual regression (Sim 4).
+//! Screenshot — capture, compare, diff, visual regression (Sim 4).
 //!
-//! - f70: capture_project — fetch pages via devtools or placeholder
+//! - f70: out_dir — cache dir for screenshots
 //! - f71: compare_screenshots — pixel-level diff with tolerance/threshold
 //! - f72: generate_diff_image — red-highlight diff PNG
-//! - f73: visual_regression — full Sim 4 orchestrator: capture → baseline → compare → report
+//! - f73: visual_regression — full Sim 4 orchestrator
+//! - f75: capture_screenshots (devtools) — headless Chromium capture
 //! - f76: update_baselines — accept current captures as new baselines
+//! - f77: baseline_dir — baseline directory path
+//! - f78: theme_cochranblock — block diagram theme
+//! - f79: capture_project — fetch pages via devtools or placeholder
+//!
+//! Types: t60=Theme, t61=CompareResult, t62=PageResult, t63=VisualReport
 
 use std::path::PathBuf;
 
-/// f70_out_dir. Returns cache dir for screenshots: ~/.cache/screenshots/{os}/{project}
-pub fn out_dir(project: &str) -> PathBuf {
+/// f70 = out_dir. Returns cache dir for screenshots: ~/.cache/screenshots/{os}/{project}
+pub fn f70(project: &str) -> PathBuf {
     let base = dirs::cache_dir()
         .unwrap_or_else(|| std::path::PathBuf::from("."))
         .join("screenshots")
@@ -18,26 +24,26 @@ pub fn out_dir(project: &str) -> PathBuf {
     base.join(project)
 }
 
-/// Theme for cochranblock: block diagram styling.
+/// t60 = Theme. Theme for cochranblock: block diagram styling.
 #[derive(Clone)]
-pub struct Theme {
+pub struct t60 {
     _placeholder: (),
 }
 
-/// f70_theme_cochranblock. Cochranblock block-diagram theme.
-pub fn theme_cochranblock() -> Theme {
-    Theme { _placeholder: () }
+/// f78 = theme_cochranblock. Cochranblock block-diagram theme.
+pub fn f78() -> t60 {
+    t60 { _placeholder: () }
 }
 
-/// f70_capture_project. Fetches each page, renders via headless browser (devtools) or placeholder.
+/// f79 = capture_project. Fetches each page, renders via headless browser (devtools) or placeholder.
 /// Returns true if all captures succeed.
-pub async fn capture_project(
+pub async fn f79(
     base: &str,
     project: &str,
     pages: &[(&str, &str)],
-    _theme: &Theme,
+    _theme: &t60,
 ) -> bool {
-    let dir = out_dir(project);
+    let dir = f70(project);
     if let Err(e) = std::fs::create_dir_all(&dir) {
         eprintln!("screenshot: mkdir {}: {}", dir.display(), e);
         return false;
@@ -45,7 +51,7 @@ pub async fn capture_project(
 
     #[cfg(feature = "devtools")]
     {
-        match crate::devtools::capture_screenshots(base, pages, &dir).await {
+        match crate::devtools::f75(base, pages, &dir).await {
             Ok(ok) => return ok,
             Err(e) => {
                 eprintln!("screenshot: devtools fallback to placeholder: {}", e);
@@ -102,8 +108,8 @@ fn write_placeholder_png(path: &std::path::Path) -> Result<(), String> {
     img.save(path).map_err(|e| e.to_string())
 }
 
-/// Result of comparing two screenshots pixel-by-pixel.
-pub struct CompareResult {
+/// t61 = CompareResult. Result of comparing two screenshots pixel-by-pixel.
+pub struct t61 {
     /// True if diff_pct is below the threshold.
     pub matches: bool,
     /// Percentage of pixels that differ (0.0–100.0).
@@ -117,19 +123,18 @@ pub struct CompareResult {
 /// f71 = compare_screenshots. Pure Rust pixel-level diff between two PNGs.
 /// `tolerance` = per-channel difference allowed before counting as changed (e.g. 10 for anti-aliasing).
 /// `threshold` = max diff_pct to consider a match (e.g. 1.0 = 1%).
-pub fn compare_screenshots(
+pub fn f71(
     actual: &std::path::Path,
     baseline: &std::path::Path,
     tolerance: u8,
     threshold: f64,
-) -> Result<CompareResult, String> {
+) -> Result<t61, String> {
     let img_a = image::open(actual).map_err(|e| format!("open {}: {}", actual.display(), e))?;
     let img_b = image::open(baseline).map_err(|e| format!("open {}: {}", baseline.display(), e))?;
 
     let rgba_a = img_a.to_rgba8();
     let rgba_b = img_b.to_rgba8();
 
-    // Resize actual to baseline dimensions if they differ
     let (w, h) = (rgba_b.width(), rgba_b.height());
     let rgba_a = if rgba_a.dimensions() != (w, h) {
         image::imageops::resize(&rgba_a, w, h, image::imageops::FilterType::Lanczos3)
@@ -156,7 +161,7 @@ pub fn compare_screenshots(
         (diff_pixels as f64 / total_pixels as f64) * 100.0
     };
 
-    Ok(CompareResult {
+    Ok(t61 {
         matches: diff_pct <= threshold,
         diff_pct,
         total_pixels,
@@ -165,7 +170,7 @@ pub fn compare_screenshots(
 }
 
 /// f72 = generate_diff_image. Creates a visual diff PNG highlighting changed pixels in red.
-pub fn generate_diff_image(
+pub fn f72(
     actual: &std::path::Path,
     baseline: &std::path::Path,
     out: &std::path::Path,
@@ -202,33 +207,26 @@ pub fn generate_diff_image(
     diff_img.save(out).map_err(|e| format!("save {}: {}", out.display(), e))
 }
 
-/// Per-page result from visual regression.
-pub struct PageResult {
-    /// Page name (e.g. "index", "resume").
+/// t62 = PageResult. Per-page result from visual regression.
+pub struct t62 {
     pub name: String,
-    /// True if visual regression passed (or baseline was created).
     pub passed: bool,
-    /// Diff percentage (0.0 if baseline was just created).
     pub diff_pct: f64,
-    /// Path to the captured screenshot.
     pub actual: PathBuf,
-    /// Path to the baseline screenshot (may not exist on first run).
     pub baseline: PathBuf,
-    /// Path to diff image (only set when comparison failed).
     pub diff_image: Option<PathBuf>,
-    /// Human-readable status.
     pub status: String,
 }
 
-/// Full visual regression report.
-pub struct VisualReport {
-    pub pages: Vec<PageResult>,
+/// t63 = VisualReport. Full visual regression report.
+pub struct t63 {
+    pub pages: Vec<t62>,
     pub all_passed: bool,
     pub baselines_created: u32,
     pub baselines_compared: u32,
 }
 
-impl VisualReport {
+impl t63 {
     pub fn print_summary(&self) {
         println!("SIM 4 VISUAL REGRESSION: {} pages", self.pages.len());
         for p in &self.pages {
@@ -246,9 +244,9 @@ impl VisualReport {
     }
 }
 
-/// Baseline directory for a project: ~/.cache/screenshots/{os}/{project}/baselines/
-pub fn baseline_dir(project: &str) -> PathBuf {
-    out_dir(project).join("baselines")
+/// f77 = baseline_dir. Baseline directory for a project: ~/.cache/screenshots/{os}/{project}/baselines/
+pub fn f77(project: &str) -> PathBuf {
+    f70(project).join("baselines")
 }
 
 /// f73 = visual_regression. Full Sim 4 orchestrator.
@@ -260,16 +258,16 @@ pub fn baseline_dir(project: &str) -> PathBuf {
 ///
 /// `tolerance` = per-channel pixel tolerance (e.g. 10 for anti-aliasing).
 /// `threshold` = max diff percentage to pass (e.g. 1.0 = 1%).
-pub async fn f73_visual_regression(
+pub async fn f73(
     base_url: &str,
     project: &str,
     pages: &[(&str, &str)],
     tolerance: u8,
     threshold: f64,
-) -> VisualReport {
-    let capture_dir = out_dir(project).join("current");
-    let base_dir = baseline_dir(project);
-    let diff_dir = out_dir(project).join("diffs");
+) -> t63 {
+    let capture_dir = f70(project).join("current");
+    let base_dir = f77(project);
+    let diff_dir = f70(project).join("diffs");
 
     for dir in [&capture_dir, &base_dir, &diff_dir] {
         if let Err(e) = std::fs::create_dir_all(dir) {
@@ -277,7 +275,6 @@ pub async fn f73_visual_regression(
         }
     }
 
-    // Capture current screenshots
     let _captured = capture_to_dir(base_url, pages, &capture_dir).await;
 
     let mut results = Vec::new();
@@ -290,7 +287,7 @@ pub async fn f73_visual_regression(
         let baseline = base_dir.join(format!("{}.png", name));
 
         if !actual.exists() {
-            results.push(PageResult {
+            results.push(t62 {
                 name: name.to_string(),
                 passed: false,
                 diff_pct: 100.0,
@@ -304,10 +301,9 @@ pub async fn f73_visual_regression(
         }
 
         if !baseline.exists() {
-            // First run: save as baseline
             if let Err(e) = std::fs::copy(&actual, &baseline) {
                 eprintln!("visual_regression: save baseline {}: {}", baseline.display(), e);
-                results.push(PageResult {
+                results.push(t62 {
                     name: name.to_string(),
                     passed: false,
                     diff_pct: 100.0,
@@ -320,7 +316,7 @@ pub async fn f73_visual_regression(
                 continue;
             }
             baselines_created += 1;
-            results.push(PageResult {
+            results.push(t62 {
                 name: name.to_string(),
                 passed: true,
                 diff_pct: 0.0,
@@ -332,13 +328,12 @@ pub async fn f73_visual_regression(
             continue;
         }
 
-        // Compare against baseline
         baselines_compared += 1;
-        match compare_screenshots(&actual, &baseline, tolerance, threshold) {
+        match f71(&actual, &baseline, tolerance, threshold) {
             Ok(cmp) => {
                 let diff_image = if !cmp.matches {
                     let dp = diff_dir.join(format!("{}_diff.png", name));
-                    if let Err(e) = generate_diff_image(&actual, &baseline, &dp, tolerance) {
+                    if let Err(e) = f72(&actual, &baseline, &dp, tolerance) {
                         eprintln!("visual_regression: diff image {}: {}", dp.display(), e);
                     }
                     Some(dp)
@@ -350,7 +345,7 @@ pub async fn f73_visual_regression(
                     all_passed = false;
                 }
 
-                results.push(PageResult {
+                results.push(t62 {
                     name: name.to_string(),
                     passed: cmp.matches,
                     diff_pct: cmp.diff_pct,
@@ -366,7 +361,7 @@ pub async fn f73_visual_regression(
             }
             Err(e) => {
                 all_passed = false;
-                results.push(PageResult {
+                results.push(t62 {
                     name: name.to_string(),
                     passed: false,
                     diff_pct: 100.0,
@@ -379,7 +374,7 @@ pub async fn f73_visual_regression(
         }
     }
 
-    VisualReport {
+    t63 {
         pages: results,
         all_passed,
         baselines_created,
@@ -388,9 +383,9 @@ pub async fn f73_visual_regression(
 }
 
 /// f76 = update_baselines. Copy current captures over baselines, accepting the new state.
-pub fn f76_update_baselines(project: &str, pages: &[&str]) -> Result<u32, String> {
-    let capture_dir = out_dir(project).join("current");
-    let base_dir = baseline_dir(project);
+pub fn f76(project: &str, pages: &[&str]) -> Result<u32, String> {
+    let capture_dir = f70(project).join("current");
+    let base_dir = f77(project);
     std::fs::create_dir_all(&base_dir).map_err(|e| e.to_string())?;
 
     let mut updated = 0u32;
@@ -407,7 +402,6 @@ pub fn f76_update_baselines(project: &str, pages: &[&str]) -> Result<u32, String
     Ok(updated)
 }
 
-/// Capture screenshots to a specific directory (not baselines). Used internally by f73.
 async fn capture_to_dir(
     base_url: &str,
     pages: &[(&str, &str)],
@@ -420,7 +414,7 @@ async fn capture_to_dir(
 
     #[cfg(feature = "devtools")]
     {
-        match crate::devtools::capture_screenshots(base_url, pages, dir).await {
+        match crate::devtools::f75(base_url, pages, dir).await {
             Ok(ok) => return ok,
             Err(e) => {
                 eprintln!("screenshot: devtools fallback to placeholder: {}", e);
@@ -467,7 +461,6 @@ async fn capture_to_dir(
 mod tests {
     use super::*;
 
-    /// Unique temp dir per test to avoid cross-process races.
     fn test_dir(name: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!("{}_{}", name, std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
@@ -477,7 +470,7 @@ mod tests {
 
     #[test]
     fn out_dir_contains_os_and_project() {
-        let p = out_dir("myproject");
+        let p = f70("myproject");
         let s = p.to_string_lossy();
         assert!(s.contains(std::env::consts::OS), "path should contain OS: {}", s);
         assert!(s.ends_with("myproject"), "path should end with project name: {}", s);
@@ -493,7 +486,7 @@ mod tests {
         img.save(&path_a).unwrap();
         img.save(&path_b).unwrap();
 
-        let result = compare_screenshots(&path_a, &path_b, 10, 1.0).unwrap();
+        let result = f71(&path_a, &path_b, 10, 1.0).unwrap();
         assert!(result.matches);
         assert_eq!(result.diff_pct, 0.0);
         assert_eq!(result.diff_pixels, 0);
@@ -513,7 +506,7 @@ mod tests {
         white.save(&path_a).unwrap();
         black.save(&path_b).unwrap();
 
-        let result = compare_screenshots(&path_a, &path_b, 10, 1.0).unwrap();
+        let result = f71(&path_a, &path_b, 10, 1.0).unwrap();
         assert!(!result.matches);
         assert_eq!(result.diff_pct, 100.0);
         assert_eq!(result.diff_pixels, 100);
@@ -527,18 +520,16 @@ mod tests {
         let path_a = dir.join("a.png");
         let path_b = dir.join("b.png");
 
-        // Images differ by 5 per channel — within tolerance of 10
         let img_a = image::RgbaImage::from_fn(10, 10, |_, _| image::Rgba([100, 100, 100, 255]));
         let img_b = image::RgbaImage::from_fn(10, 10, |_, _| image::Rgba([105, 105, 105, 255]));
         img_a.save(&path_a).unwrap();
         img_b.save(&path_b).unwrap();
 
-        let result = compare_screenshots(&path_a, &path_b, 10, 1.0).unwrap();
+        let result = f71(&path_a, &path_b, 10, 1.0).unwrap();
         assert!(result.matches, "within tolerance should match");
         assert_eq!(result.diff_pixels, 0);
 
-        // Same images but with tolerance=3 — should fail
-        let result = compare_screenshots(&path_a, &path_b, 3, 1.0).unwrap();
+        let result = f71(&path_a, &path_b, 3, 1.0).unwrap();
         assert!(!result.matches, "outside tolerance should not match");
         assert_eq!(result.diff_pixels, 100);
 
@@ -551,14 +542,12 @@ mod tests {
         let path_a = dir.join("a.png");
         let path_b = dir.join("b.png");
 
-        // Different sizes, same color — should match after resize
         let img_a = image::RgbaImage::from_fn(20, 20, |_, _| image::Rgba([100, 100, 100, 255]));
         let img_b = image::RgbaImage::from_fn(10, 10, |_, _| image::Rgba([100, 100, 100, 255]));
         img_a.save(&path_a).unwrap();
         img_b.save(&path_b).unwrap();
 
-        let result = compare_screenshots(&path_a, &path_b, 10, 5.0).unwrap();
-        // After Lanczos3 resize, solid color should stay close
+        let result = f71(&path_a, &path_b, 10, 5.0).unwrap();
         assert!(result.matches, "resized solid color should match: diff={:.2}%", result.diff_pct);
 
         let _ = std::fs::remove_dir_all(&dir);
@@ -566,8 +555,8 @@ mod tests {
 
     #[test]
     fn baseline_dir_under_out_dir() {
-        let bd = baseline_dir("testproj");
-        let od = out_dir("testproj");
+        let bd = f77("testproj");
+        let od = f70("testproj");
         assert!(bd.starts_with(&od), "baseline_dir should be under out_dir");
         assert!(bd.ends_with("baselines"));
     }
@@ -575,22 +564,21 @@ mod tests {
     #[test]
     fn update_baselines_copies_files() {
         let project = "exopack_test_update_bl";
-        let current_dir = out_dir(project).join("current");
-        let base_dir = baseline_dir(project);
+        let current_dir = f70(project).join("current");
+        let base_dir = f77(project);
         let _ = std::fs::create_dir_all(&current_dir);
         let _ = std::fs::remove_dir_all(&base_dir);
 
-        // Create fake current screenshots
         let img = image::RgbaImage::from_fn(5, 5, |_, _| image::Rgba([42, 42, 42, 255]));
         img.save(current_dir.join("index.png")).unwrap();
         img.save(current_dir.join("about.png")).unwrap();
 
-        let updated = f76_update_baselines(project, &["index", "about"]).unwrap();
+        let updated = f76(project, &["index", "about"]).unwrap();
         assert_eq!(updated, 2);
         assert!(base_dir.join("index.png").exists());
         assert!(base_dir.join("about.png").exists());
 
-        let _ = std::fs::remove_dir_all(out_dir(project));
+        let _ = std::fs::remove_dir_all(f70(project));
     }
 
     #[test]
@@ -605,7 +593,7 @@ mod tests {
         white.save(&path_a).unwrap();
         black.save(&path_b).unwrap();
 
-        generate_diff_image(&path_a, &path_b, &path_d, 10).unwrap();
+        f72(&path_a, &path_b, &path_d, 10).unwrap();
         assert!(path_d.exists());
 
         let _ = std::fs::remove_dir_all(&dir);

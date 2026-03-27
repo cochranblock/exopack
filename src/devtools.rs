@@ -38,7 +38,7 @@ async fn browser_config() -> Result<chromiumoxide::BrowserConfig, String> {
 }
 
 /// f74 = check_console_errors. Navigates to each URL, collects console errors. Returns errors or empty.
-pub async fn check_console_errors(base: &str, paths: &[&str]) -> Result<Vec<String>, String> {
+pub async fn f74(base: &str, paths: &[&str]) -> Result<Vec<String>, String> {
     let base = base.trim_end_matches('/');
     let config = browser_config().await?;
 
@@ -67,7 +67,7 @@ pub async fn check_console_errors(base: &str, paths: &[&str]) -> Result<Vec<Stri
 
 /// f75 = capture_screenshots. Launches headless Chromium, navigates to each URL, waits for render (WASM),
 /// saves PNG to out_dir. Returns true if all succeed.
-pub async fn capture_screenshots(
+pub async fn f75(
     base: &str,
     pages: &[(&str, &str)],
     out_dir: &Path,

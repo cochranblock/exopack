@@ -6,10 +6,10 @@ use std::path::Path;
 use std::process::Command;
 use std::time::Duration;
 
-/// Run the full baked demo: every CLI subcommand + every HTTP endpoint.
+/// f95 = run_baked_demo. Every CLI subcommand + every HTTP endpoint.
 /// Replicates intended usage as if the user were using it. No recording.
 /// Returns Ok(()) if all steps pass.
-pub async fn run_baked_demo(
+pub async fn f95(
     kova_bin: &Path,
     home: &Path,
     port: u16,
@@ -46,7 +46,7 @@ pub async fn run_baked_demo(
 
     tokio::time::sleep(Duration::from_secs(2)).await;
 
-    let client = crate::interface::http_client().map_err(|e| e.to_string())?;
+    let client = crate::interface::f81().map_err(|e| e.to_string())?;
     let base = format!("http://127.0.0.1:{}", port);
 
     // 7. GET / (web client)

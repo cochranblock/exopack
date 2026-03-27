@@ -5,10 +5,10 @@
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-/// Single recorded action. Web: click, input, api_call. Egui: click, key, intent.
+/// t66 = DemoAction. Single recorded action. Web: click, input, api_call. Egui: click, key, intent.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
-pub enum DemoAction {
+pub enum t66 {
     /// Web: element click. selector, timestamp.
     WebClick { selector: String, ts_ms: u64 },
     /// Web: input change. id, value.
@@ -28,17 +28,17 @@ pub enum DemoAction {
     Screenshot { path: String },
 }
 
-/// Demo recording session. Written to ~/.kova/demos/{name}.json
+/// t67 = DemoRecord. Demo recording session. Written to ~/.kova/demos/{name}.json
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DemoRecord {
+pub struct t67 {
     pub name: String,
     pub source: String, // "web" | "egui"
-    pub actions: Vec<DemoAction>,
+    pub actions: Vec<t66>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub started_at: Option<String>,
 }
 
-impl DemoRecord {
+impl t67 {
     pub fn new(name: impl Into<String>, source: &str) -> Self {
         Self {
             name: name.into(),
@@ -48,7 +48,7 @@ impl DemoRecord {
         }
     }
 
-    pub fn push(&mut self, action: DemoAction) {
+    pub fn push(&mut self, action: t66) {
         self.actions.push(action);
     }
 
@@ -76,8 +76,8 @@ fn chrono_now() -> String {
     format!("{}", t)
 }
 
-/// Demo dir: ~/.kova/demos or KOVA_DEMO_DIR
-pub fn demo_dir() -> std::path::PathBuf {
+/// f90 = demo_dir. Demo dir: ~/.kova/demos or KOVA_DEMO_DIR
+pub fn f90() -> std::path::PathBuf {
     std::env::var("KOVA_DEMO_DIR")
         .ok()
         .map(std::path::PathBuf::from)
@@ -104,12 +104,12 @@ mod tests {
     fn demo_record_round_trip() {
         let dir = test_dir("exopack_test_demo_rt");
 
-        let mut rec = DemoRecord::new("test-demo", "web");
-        rec.push(DemoAction::WebClick {
+        let mut rec = t67::new("test-demo", "web");
+        rec.push(t66::WebClick {
             selector: "#btn".into(),
             ts_ms: 100,
         });
-        rec.push(DemoAction::ApiCall {
+        rec.push(t66::ApiCall {
             method: "POST".into(),
             path: "/api/test".into(),
             body_summary: Some("hello".into()),
@@ -118,7 +118,7 @@ mod tests {
         let path = rec.save(&dir).unwrap();
         assert!(path.exists());
 
-        let loaded = DemoRecord::load(&path).unwrap();
+        let loaded = t67::load(&path).unwrap();
         assert_eq!(loaded.name, "test-demo");
         assert_eq!(loaded.source, "web");
         assert_eq!(loaded.actions.len(), 2);
@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     fn demo_action_serialize_tagged() {
-        let action = DemoAction::EguiSend {
+        let action = t66::EguiSend {
             text: "hello kova".into(),
         };
         let json = serde_json::to_string(&action).unwrap();
@@ -140,7 +140,7 @@ mod tests {
     fn demo_record_sanitizes_filename() {
         let dir = test_dir("exopack_test_demo_safe");
 
-        let rec = DemoRecord::new("test/bad:name", "egui");
+        let rec = t67::new("test/bad:name", "egui");
         let path = rec.save(&dir).unwrap();
         let filename = path.file_name().unwrap().to_string_lossy();
         assert!(!filename.contains('/'));

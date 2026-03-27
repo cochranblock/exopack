@@ -4,16 +4,16 @@
 
 use std::path::Path;
 
-/// Video recorder trait. Implement for platform-specific capture.
-pub trait VideoRecorder: Send + Sync {
+/// t64 = VideoRecorder. Video recorder trait. Implement for platform-specific capture.
+pub trait t64: Send + Sync {
     /// Start recording.
     fn start(&mut self) -> Result<(), String>;
     /// Stop and save to path. Returns saved file path.
     fn stop(&mut self, out: &Path) -> Result<std::path::PathBuf, String>;
 }
 
-/// Screenshot capture. Returns path to saved PNG.
-pub fn capture_screenshot(out_dir: &Path, name: &str) -> Result<std::path::PathBuf, String> {
+/// f88 = capture_screenshot. Screenshot capture. Returns path to saved PNG.
+pub fn f88(out_dir: &Path, name: &str) -> Result<std::path::PathBuf, String> {
     #[cfg(feature = "video")]
     {
         use std::fs;
@@ -36,10 +36,10 @@ pub fn capture_screenshot(out_dir: &Path, name: &str) -> Result<std::path::PathB
     }
 }
 
-/// No-op recorder. Use when platform impl not available.
-pub struct NoopRecorder;
+/// t65 = NoopRecorder. No-op recorder. Use when platform impl not available.
+pub struct t65;
 
-impl VideoRecorder for NoopRecorder {
+impl t64 for t65 {
     fn start(&mut self) -> Result<(), String> {
         Ok(())
     }
@@ -48,10 +48,10 @@ impl VideoRecorder for NoopRecorder {
     }
 }
 
-/// Create a recorder for the current platform.
-/// Video encoding (xcap frames → file) deferred; screenshot capture available via capture_screenshot.
-pub fn create_recorder() -> Box<dyn VideoRecorder> {
-    Box::new(NoopRecorder)
+/// f89 = create_recorder. Create a recorder for the current platform.
+/// Video encoding (xcap frames → file) deferred; screenshot capture available via f88.
+pub fn f89() -> Box<dyn t64> {
+    Box::new(t65)
 }
 
 #[cfg(test)]
@@ -60,20 +60,20 @@ mod tests {
 
     #[test]
     fn noop_recorder_start_succeeds() {
-        let mut rec = NoopRecorder;
+        let mut rec = t65;
         assert!(rec.start().is_ok());
     }
 
     #[test]
     fn noop_recorder_stop_returns_error() {
-        let mut rec = NoopRecorder;
+        let mut rec = t65;
         let out = std::path::Path::new("/tmp/fake.mp4");
         assert!(rec.stop(out).is_err());
     }
 
     #[test]
     fn create_recorder_returns_noop() {
-        let mut rec = create_recorder();
+        let mut rec = f89();
         assert!(rec.start().is_ok());
         assert!(rec.stop(std::path::Path::new("/tmp/fake.mp4")).is_err());
     }

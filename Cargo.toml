@@ -49,3 +49,10 @@ chromiumoxide = { version = "0.9", optional = true, default-features = false }
 futures = { version = "0.3", optional = true }
 xcap = { version = "0.9", optional = true }
 serde = { version = "1", features = ["derive"], optional = true }
+
+[profile.release]
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = 'abort'
+strip = true
