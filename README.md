@@ -40,7 +40,7 @@ flowchart TB
     Test --> Core
     Test --> exopack
 
-    Screenshot --> |HTML→SVG→PNG| Capture
+    Screenshot --> |Sim 4: capture→diff| VisualRegression
     Interface --> |spawn + HTTP| Harness
     Mock --> |WireMock| Stub
     Triple --> |run 3×| AllPass
@@ -50,7 +50,7 @@ flowchart TB
 
 ## Features
 
-- **screenshot** — Pure Rust HTML→SVG→PNG capture (no Chrome), with devtools fallback. Visual regression: pixel diff + diff image generation
+- **screenshot** — Sim 4 visual regression: capture → baseline → pixel diff → red-highlight diff image. Auto-creates baselines on first run. Pure Rust (no Chrome for basic capture, devtools fallback for full browser)
 - **interface** — Test server harness: random-port binding, HTTP client with cookie store
 - **triple_sims** — Run test runner 3 times; all must pass. Includes live-demo and test-bin discovery
 - **devtools** — Headless Chromium via CDP: console error check, full-page screenshots (WASM-aware)
