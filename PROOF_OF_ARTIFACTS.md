@@ -27,14 +27,44 @@ flowchart TD
 
 | Metric | Value |
 |--------|-------|
+| Source LOC | 1,584 across 10 source files |
 | Modules | 8 (triple_sims, screenshot, devtools, mock, interface, video, demo, baked_demo) |
+| Public functions | 28 (f60–f95) |
+| Public types | 8 (t60–t67) |
 | Feature gates | 7 feature-gated + video (always compiled, xcap optional) |
+| Direct deps (all features) | 17 from crates.io |
+| Direct deps (triple_sims only) | 0 — pure std |
+| Unit tests | 17 across screenshot, triple_sims, demo, video |
+| Binary size (release, ARM) | 321,008 bytes (314 KB) |
+| Release profile | opt-level='z', lto=true, codegen-units=1, panic='abort', strip=true |
 | Projects using exopack | 5+ (cochranblock, kova, oakilydokily, whyyoulying, wowasticker) |
 | Architecture doc | 2,286 lines — testing philosophy, patterns, anti-patterns |
-| TRIPLE SIMS passes | 3 sequential runs, all must pass (eliminates flaky tests) |
-| Visual regression | Sim 4: capture → baseline → pixel diff → diff image → per-page report |
-| Screenshot method | Pure Rust HTML→SVG→PNG (no Chrome dependency for basic capture) |
-| Unit tests | 17 across screenshot, triple_sims, demo, video |
+| Compression map | P13 complete — 28 functions, 8 types, 19 fields, 1 CLI command |
+| Federal compliance docs | 11 documents in govdocs/ (SBOM, SSDF, FIPS, CMMC, etc.) |
+
+## QA Results (2026-03-27)
+
+### QA Round 1
+- `cargo build --release`: Clean, zero warnings
+- `cargo build --release --all-features`: Clean, zero warnings
+- `cargo test --features "screenshot,triple_sims,demo"`: 17/17 pass
+- `cargo clippy -- -D warnings`: Pass (default + all-features)
+- AI slop scan (P12): Zero banned words
+- Debug artifact scan: Zero `dbg!`, `TODO`, `FIXME`
+
+### QA Round 2
+- `cargo clean && cargo build --release`: Clean from scratch
+- `cargo clippy --release -- -D warnings`: Pass
+- `cargo clippy --release --all-features -- -D warnings`: Pass
+- Cross-process test race: Found and fixed (PID-scoped temp dirs)
+- Git status: Clean (only Cargo.lock untracked → now committed)
+
+### P13 Tokenization
+- 28 functions renamed to compressed tokens (f60–f95)
+- 8 types renamed (t60–t67)
+- 19 fields documented (s60–s78)
+- 1 CLI command mapped (c60)
+- All cross-file references updated and verified
 
 ## Key Artifacts
 
@@ -42,20 +72,32 @@ flowchart TD
 |----------|-------------|
 | TRIPLE SIMS | Run test suite 3x sequentially — all must pass. Detects race conditions, non-determinism, flaky tests |
 | Two-Binary Model | Production binary has zero test deps. Test binary is self-contained quality gate |
-| Sim 4 Visual Regression | Full orchestrator: capture → auto-baseline → pixel diff (configurable tolerance/threshold) → red-highlight diff PNG → per-page pass/fail report. `f76_update_baselines` to accept new state |
-| Mock Server | WireMock integration on random ports — isolated integration tests without real APIs |
+| Sim 4 Visual Regression | Full orchestrator: capture → auto-baseline → pixel diff (configurable tolerance/threshold) → red-highlight diff PNG → per-page pass/fail report. `f76` to accept new state |
+| Mock Server | WireMock: GET/POST text/JSON on random ports + custom status codes |
 | Demo Record/Replay | Capture WebClick, WebInput, ApiCall, EguiSend actions as JSON for automated replay |
 | Baked Demo | Zero-user-input automation: CLI subcommands + all HTTP endpoints exercised |
 | HTTP Harness | Bind to :0 (random port) + cookie-store client — test servers without port conflicts |
+| User Story Analysis | 10-point user walkthrough, scored 5.4/10, top 3 fixes implemented |
 
 ## How to Verify
 
 ```bash
+# Build release binary:
+cargo build -p exopack --release --features triple_sims
+./target/release/exopack --help
+./target/release/exopack --version
+
+# Run unit tests:
+cargo test -p exopack --features "screenshot,triple_sims,demo"
+
+# Clippy (warnings as errors):
+cargo clippy -p exopack --release --all-features -- -D warnings
+
 # Any project using exopack:
 cargo run -p cochranblock --bin cochranblock-test --features tests
 # Runs: clippy → TRIPLE SIMS (3 passes) → exit 0 or 1
 
-# exopack standalone (requires triple_sims feature for the binary):
+# exopack standalone:
 cargo run -p exopack --features triple_sims -- live-demo <project_dir>
 ```
 

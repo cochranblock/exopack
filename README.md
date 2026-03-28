@@ -63,3 +63,6 @@ flowchart TB
 
 - [docs/testing_architecture.md](docs/testing_architecture.md) — Two-binary test model
 - [docs/ROUGH_DRAFT_EXOPACK.md](docs/ROUGH_DRAFT_EXOPACK.md) — Design notes
+- [docs/compression_map.md](docs/compression_map.md) — P13 token registry (f60–f95, t60–t67)
+- [govdocs/](govdocs/) — Federal compliance (SBOM, SSDF, FIPS, FedRAMP, CMMC, ITAR/EAR)
+- [USER_STORY_ANALYSIS.md](USER_STORY_ANALYSIS.md) — Full user walkthrough and scoring
