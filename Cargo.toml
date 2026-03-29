@@ -6,7 +6,13 @@
 name = "exopack"
 version = "0.1.0"
 edition = "2021"
-description = "Testing augmentation: screenshot, video, interfaces, API mocks, triple sims"
+description = "Testing augmentation for Rust binaries: TRIPLE SIMS determinism, visual regression, screenshot capture, API mocking, demo record/replay"
+license = "Unlicense"
+repository = "https://github.com/cochranblock/exopack"
+homepage = "https://cochranblock.org"
+readme = "README.md"
+keywords = ["testing", "ci-cd", "screenshot", "triple-sims", "visual-regression"]
+categories = ["development-tools::testing"]
 
 [[bin]]
 name = "exopack"
