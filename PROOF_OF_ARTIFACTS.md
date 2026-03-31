@@ -27,20 +27,23 @@ flowchart TD
 
 | Metric | Value |
 |--------|-------|
-| Source LOC | 1,584 across 10 source files |
+| Source LOC | 1,781 across 10 source files |
 | Modules | 8 (triple_sims, screenshot, devtools, mock, interface, video, demo, baked_demo) |
-| Public functions | 28 (f60–f95) |
+| Public functions | 27 library + CLI (f60–f95) |
 | Public types | 8 (t60–t67) |
 | Feature gates | 7 feature-gated + video (always compiled, xcap optional) |
 | Direct deps (all features) | 17 from crates.io |
 | Direct deps (triple_sims only) | 0 — pure std |
 | Unit tests | 17 across screenshot, triple_sims, demo, video |
-| Binary size (release, ARM) | 321,008 bytes (314 KB) |
+| Binary size (release, ARM, with govdocs) | 370,592 bytes (362 KB) |
+| Binary size (release, Linux x86_64) | 393,288 bytes (384 KB) |
 | Release profile | opt-level='z', lto=true, codegen-units=1, panic='abort', strip=true |
 | Projects using exopack | 5+ (cochranblock, kova, oakilydokily, whyyoulying, wowasticker) |
 | Architecture doc | 2,286 lines — testing philosophy, patterns, anti-patterns |
-| Compression map | P13 complete — 28 functions, 8 types, 19 fields, 1 CLI command |
-| Federal compliance docs | 11 documents in govdocs/ (SBOM, SSDF, FIPS, CMMC, etc.) |
+| Compression map | P13 complete — 27 functions, 8 types, 19 fields, 1 CLI command |
+| Federal compliance docs | 12 documents in govdocs/ (SBOM, SSDF, FIPS, CMMC, supply chain audit) |
+| Known vulnerabilities | 1 (idna 0.3.0 — non-exploitable on localhost, documented) |
+| GitHub Release | v0.1.0 — macOS ARM + Linux x86_64 binaries |
 
 ## QA Results (2026-03-27)
 

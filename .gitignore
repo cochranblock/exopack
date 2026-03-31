@@ -2,7 +2,18 @@
 *.db
 *.sqlite
 .env
+.DS_Store
+*.swp
+*.swo
+*~
+*.orig
+*.bak
+*.log
+*.jks
+vendor/
 
 # Claude Code worktrees
 .claude/worktrees/
+
+# Release binaries (live in GitHub Releases, not git)
 release/

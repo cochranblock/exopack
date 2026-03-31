@@ -29,7 +29,7 @@ strip = true
 ## No Vendored Binaries
 
 - No pre-compiled `.so`, `.dylib`, `.dll`, or `.wasm` files in the repository
-- The `fonts/` directory contains only font files (Nunito TTF) — these are data, not executable code
+- No font files, data blobs, or binary assets
 - chromiumoxide may download a Chromium binary at runtime (devtools feature only) — this is fetched from the official Chromium distribution, not vendored
 
 ## Source Availability
