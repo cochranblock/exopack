@@ -10,6 +10,27 @@
 
 ## Entries
 
+### 2026-03-31 — Truth Audit: Supply Chain Security + File Cleanup
+
+**What:** Federal-grade supply chain audit: `cargo audit` (1 vuln: idna 0.3.0, non-exploitable on localhost), `cargo outdated` (all direct deps current), deep code review (0 unsafe in exopack, tokio 1012 expected). File cleanup: removed unused 277KB Nunito font, empty examples/ dir, untracked release binaries from git. Fixed stale metrics in POA (LOC 1584→1781, binary 314KB→362KB, functions 28→27).
+**Why:** EO 14028 supply chain verification. Every number in every doc must match reality.
+**Commit:** `521af17`
+**AI Role:** AI ran full audit toolchain, diagnosed findings, performed cleanup. Human directed audit scope.
+
+### 2026-03-29 — Multi-Arch: macOS ARM + Linux x86_64
+
+**What:** Built exopack for two architectures. macOS ARM (362 KB) built locally. Linux x86_64 (384 KB) built on st (kova-elite-support) via vendored deps + rsync. Both uploaded to GitHub Release v0.1.0. Build script at `scripts/build-targets.sh`.
+**Why:** CI servers run Linux. Dev machines run macOS ARM. Need both.
+**Commit:** `b3817f3`
+**AI Role:** AI wrote build script, handled workspace conflict on st (/tmp build), uploaded to release.
+
+### 2026-03-28 — Crates.io Metadata + Dogfood Govdocs CLI
+
+**What:** Added crates.io publish metadata (license=Unlicense, repository, keywords, categories). `cargo publish --dry-run` passes. Dogfood: `exopack govdocs [topic]` subcommand prints all 11 compliance docs from binary (baked via `include_str!`). `exopack govdocs deps` parses baked Cargo.toml at runtime. `exopack --sbom` outputs SPDX 2.3 format for federal scanners.
+**Why:** The binary IS the compliance artifact. No external docs needed.
+**Commits:** `542611b`, `036bd11`
+**AI Role:** AI implemented CLI subcommands and SPDX output. Human directed dogfooding approach.
+
 ### 2026-03-27 — Federal Compliance Documentation
 
 **What:** 11 federal compliance documents in `govdocs/`: SBOM (EO 14028), SSDF (NIST SP 800-218), supply chain integrity, security posture, accessibility (Section 508), privacy impact assessment, FIPS 140-2/3 status, FedRAMP notes, CMMC mapping, ITAR/EAR export classification, federal agency use cases.
