@@ -33,3 +33,6 @@ pub mod standards_check;
 
 #[cfg(feature = "checkpoint")]
 pub mod checkpoint;
+
+#[cfg(feature = "compaction")]
+pub mod compaction;

@@ -41,6 +41,8 @@ devtools = ["chromiumoxide", "chromiumoxide/fetcher", "chromiumoxide/rustls", "c
 standards_check = []
 # checkpoint: test harness for checkpoint/undo file patterns
 checkpoint = []
+# compaction: test harness for context compaction patterns
+compaction = []
 
 [dependencies]
 scraper = { version = "0.19", optional = true }
