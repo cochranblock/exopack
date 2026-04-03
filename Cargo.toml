@@ -45,6 +45,8 @@ checkpoint = []
 compaction = []
 # dual_mode: test harness for dual-mode inference routing
 dual_mode = []
+# perm_gate: test harness for tool permission gates
+perm_gate = []
 
 [dependencies]
 scraper = { version = "0.19", optional = true }

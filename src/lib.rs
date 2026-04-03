@@ -39,3 +39,6 @@ pub mod compaction;
 
 #[cfg(feature = "dual_mode")]
 pub mod dual_mode;
+
+#[cfg(feature = "perm_gate")]
+pub mod perm_gate;
