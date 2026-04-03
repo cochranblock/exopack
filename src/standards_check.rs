@@ -748,4 +748,144 @@ rust-version = "1.75"
         assert!(report.passed() > 0, "should have some passes");
         let _ = fs::remove_dir_all(&dir);
     }
+
+    // t70 / t71 / t72 type behavior tests
+
+    #[test]
+    fn t70_pass_sets_s81_true() {
+        let r = t70::pass("clippy", "zero warnings");
+        assert!(r.s81);
+        assert_eq!(r.s80, "clippy");
+        assert_eq!(r.s82, "zero warnings");
+    }
+
+    #[test]
+    fn t70_fail_sets_s81_false() {
+        let r = t70::fail("fmt", "2 files need formatting");
+        assert!(!r.s81);
+        assert_eq!(r.s80, "fmt");
+    }
+
+    #[test]
+    fn t71_counts_correct() {
+        let checks = vec![
+            t70::pass("a", "ok"),
+            t70::fail("b", "bad"),
+            t70::pass("c", "ok"),
+        ];
+        let report = t71 {
+            s83: "proj".to_string(),
+            s84: PathBuf::from("/tmp/proj"),
+            s85: checks,
+        };
+        assert_eq!(report.passed(), 2);
+        assert_eq!(report.failed(), 1);
+        assert_eq!(report.total(), 3);
+    }
+
+    #[test]
+    fn t71_all_pass() {
+        let checks = vec![t70::pass("a", "ok"), t70::pass("b", "ok")];
+        let report = t71 {
+            s83: "proj".to_string(),
+            s84: PathBuf::from("/tmp/proj"),
+            s85: checks,
+        };
+        assert_eq!(report.failed(), 0);
+        assert_eq!(report.passed(), report.total());
+    }
+
+    #[test]
+    fn t71_all_fail() {
+        let checks = vec![t70::fail("a", "bad"), t70::fail("b", "bad")];
+        let report = t71 {
+            s83: "proj".to_string(),
+            s84: PathBuf::from("/tmp/proj"),
+            s85: checks,
+        };
+        assert_eq!(report.passed(), 0);
+        assert_eq!(report.failed(), report.total());
+    }
+
+    #[test]
+    fn t72_empty_portfolio_no_panic() {
+        // print_table on empty portfolio must not panic
+        let portfolio = t72 { s86: vec![] };
+        portfolio.print_table();
+    }
+
+    #[test]
+    fn t72_single_project_print_table_no_panic() {
+        let checks = vec![
+            t70::pass("clippy", "ok"),
+            t70::fail("fmt", "1 file"),
+        ];
+        let proj = t71 {
+            s83: "testproj".to_string(),
+            s84: PathBuf::from("/tmp/testproj"),
+            s85: checks,
+        };
+        let portfolio = t72 { s86: vec![proj] };
+        // Exercises the full table render path without panicking.
+        portfolio.print_table();
+    }
+
+    // Report output format: check names are in the canonical 14-check order.
+    #[test]
+    fn f101_check_order_matches_canonical() {
+        let dir = tmp_project("check_order");
+        // Minimal Cargo.toml so f101 can read it.
+        fs::write(
+            dir.join("Cargo.toml"),
+            "[package]\nname = \"ord\"\nversion = \"0.1.0\"\n",
+        )
+        .unwrap();
+        fs::write(dir.join("src").join("lib.rs"), "").unwrap();
+
+        let report = f101(&dir);
+        let names: Vec<&str> = report.s85.iter().map(|c| c.s80).collect();
+
+        assert_eq!(names.len(), 14, "must have exactly 14 checks");
+        assert_eq!(names[0], "clippy");
+        assert_eq!(names[1], "fmt");
+        assert_eq!(names[2], "audit");
+        assert_eq!(names[3], "deny");
+        assert_eq!(names[4], "msrv");
+        assert_eq!(names[5], "unsafe");
+        assert_eq!(names[6], "docs");
+        assert_eq!(names[7], "changelog");
+        assert_eq!(names[8], "license_file");
+        assert_eq!(names[9], "test_binary");
+        assert_eq!(names[10], "allow_unused");
+        assert_eq!(names[11], "error_handling");
+        assert_eq!(names[12], "secrets");
+        assert_eq!(names[13], "cargo_meta");
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    // f116 portfolio aggregation
+    #[test]
+    fn f116_aggregates_multiple_projects() {
+        let dir_a = tmp_project("agg_a");
+        let dir_b = tmp_project("agg_b");
+        for dir in [&dir_a, &dir_b] {
+            fs::write(
+                dir.join("Cargo.toml"),
+                "[package]\nname = \"agg\"\nversion = \"0.1.0\"\n",
+            )
+            .unwrap();
+            fs::write(dir.join("src").join("lib.rs"), "").unwrap();
+        }
+
+        let portfolio = f116(&[dir_a.as_path(), dir_b.as_path()]);
+        assert_eq!(portfolio.s86.len(), 2, "must report 2 projects");
+        assert!(
+            portfolio.s86.iter().all(|p| p.total() == 14),
+            "each project must have 14 checks"
+        );
+
+        let _ = fs::remove_dir_all(&dir_a);
+        let _ = fs::remove_dir_all(&dir_b);
+    }
 }

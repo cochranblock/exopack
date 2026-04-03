@@ -155,6 +155,127 @@ mod tests {
         assert_eq!(f63_discover_test_bin(&dir), None);
         let _ = std::fs::remove_dir_all(&dir);
     }
+
+    #[test]
+    fn discover_test_bin_skips_non_test_first_bin() {
+        // Two [[bin]] sections; first does not end with -test, second does.
+        let dir = test_dir("exopack_multi_bin");
+        let manifest = dir.join("Cargo.toml");
+        let mut f = std::fs::File::create(&manifest).unwrap();
+        writeln!(f, "[package]\nname = \"multi\"\nversion = \"0.1.0\"\n").unwrap();
+        writeln!(f, "[[bin]]\nname = \"multi\"\npath = \"src/main.rs\"\n").unwrap();
+        writeln!(f, "[[bin]]\nname = \"multi-test\"\npath = \"src/bin/test.rs\"").unwrap();
+        drop(f);
+        assert_eq!(f63_discover_test_bin(&dir), Some("multi-test".to_string()));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn discover_test_bin_ignores_test_prefix_not_suffix() {
+        // "test-foo" has "test" in it but not as a -test suffix — must not match.
+        let dir = test_dir("exopack_prefix_test");
+        let manifest = dir.join("Cargo.toml");
+        let mut f = std::fs::File::create(&manifest).unwrap();
+        writeln!(f, "[package]\nname = \"pfx\"\nversion = \"0.1.0\"\n").unwrap();
+        writeln!(f, "[[bin]]\nname = \"test-pfx\"\npath = \"src/main.rs\"").unwrap();
+        drop(f);
+        assert_eq!(f63_discover_test_bin(&dir), None);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn discover_test_bin_exact_suffix_test_only() {
+        // A binary named exactly "test" — does not end with "-test".
+        let dir = test_dir("exopack_exact_test");
+        let manifest = dir.join("Cargo.toml");
+        let mut f = std::fs::File::create(&manifest).unwrap();
+        writeln!(f, "[package]\nname = \"ex\"\nversion = \"0.1.0\"\n").unwrap();
+        writeln!(f, "[[bin]]\nname = \"test\"\npath = \"src/main.rs\"").unwrap();
+        drop(f);
+        assert_eq!(f63_discover_test_bin(&dir), None);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    // f60 async runner — requires tokio runtime
+    #[tokio::test]
+    async fn triple_sims_all_pass_returns_true() {
+        let result = f60(|| async { true }).await;
+        assert!(result, "all-pass run must return true");
+    }
+
+    #[tokio::test]
+    async fn triple_sims_immediate_fail_returns_false() {
+        let result = f60(|| async { false }).await;
+        assert!(!result, "always-fail run must return false");
+    }
+
+    #[tokio::test]
+    async fn triple_sims_fails_on_third_pass() {
+        use std::sync::{
+            atomic::{AtomicU32, Ordering},
+            Arc,
+        };
+        let count = Arc::new(AtomicU32::new(0));
+        let result = f60(|| {
+            let c = count.clone();
+            async move {
+                // passes 1st and 2nd, fails 3rd
+                c.fetch_add(1, Ordering::SeqCst) < 2
+            }
+        })
+        .await;
+        assert!(!result, "run that fails on 3rd pass must return false");
+    }
+
+    #[tokio::test]
+    async fn triple_sims_exactly_three_runs() {
+        use std::sync::{
+            atomic::{AtomicU32, Ordering},
+            Arc,
+        };
+        let count = Arc::new(AtomicU32::new(0));
+        let c = count.clone();
+        let result = f60(|| {
+            let c2 = c.clone();
+            async move {
+                c2.fetch_add(1, Ordering::SeqCst);
+                true
+            }
+        })
+        .await;
+        assert!(result);
+        assert_eq!(
+            count.load(Ordering::SeqCst),
+            3,
+            "f60 must invoke closure exactly 3 times on success"
+        );
+    }
+
+    // f61 — run_cargo_test_n: validate fail path when binary missing
+    #[test]
+    fn run_cargo_test_n_fails_with_nonexistent_dir() {
+        let dir = std::path::Path::new("/tmp/exopack_nonexistent_cargo_proj_xyz");
+        let (ok, msg) = f61(dir, 1);
+        assert!(!ok, "must fail for nonexistent project dir");
+        assert!(!msg.is_empty(), "error message must not be empty");
+    }
+
+    #[test]
+    fn run_cargo_test_n_returns_true_for_zero_runs() {
+        // n=0 means no runs — loop body never executes, returns (true, "")
+        let dir = std::env::temp_dir();
+        let (ok, msg) = f61(&dir, 0);
+        assert!(ok, "zero runs should vacuously pass");
+        assert!(msg.is_empty());
+    }
+
+    // f62_live_demo: validate error path when Cargo.toml is absent
+    #[test]
+    fn live_demo_errors_on_missing_manifest() {
+        let dir = std::path::Path::new("/tmp/exopack_no_manifest_xyz");
+        let result = f62_live_demo(dir, "foo-test", &[]);
+        assert!(result.is_err(), "must return Err when Cargo.toml absent");
+    }
 }
 
 /// f60 = triple_sims_run. Runs `run_once` 3 times. Returns true iff all pass.
