@@ -25,3 +25,6 @@ pub mod demo;
 
 #[cfg(feature = "baked_demo")]
 pub mod baked_demo;
+
+#[cfg(feature = "standards_check")]
+pub mod standards_check;

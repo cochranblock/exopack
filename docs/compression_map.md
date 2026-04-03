@@ -92,6 +92,31 @@ Doc comments on each symbol map to human-readable names.
 |-------|---------|--------|
 | c60 | live-demo | exopack |
 
+## Standards Check (f100+, t70+)
+
+| Token | Human Name | Module | Signature |
+|-------|-----------|--------|-----------|
+| f100 | print_table | standards_check | `fn print_table(&self)` (on t72) |
+| f101 | check_project | standards_check | `fn f101(project_dir) -> t71` |
+| f102 | check_clippy | standards_check | `fn f102(dir) -> t70` |
+| f103 | check_fmt | standards_check | `fn f103(dir) -> t70` |
+| f104 | check_audit | standards_check | `fn f104(dir) -> t70` |
+| f105 | check_deny | standards_check | `fn f105(dir) -> t70` |
+| f106 | check_msrv | standards_check | `fn f106(cargo_content) -> t70` |
+| f107 | check_unsafe | standards_check | `fn f107(dir) -> t70` |
+| f108 | check_docs | standards_check | `fn f108(dir) -> t70` |
+| f109 | check_changelog | standards_check | `fn f109(dir) -> t70` |
+| f110 | check_license_file | standards_check | `fn f110(dir) -> t70` |
+| f111 | check_test_binary | standards_check | `fn f111(dir, cargo) -> t70` |
+| f112 | check_allow_unused | standards_check | `fn f112(dir) -> t70` |
+| f113 | check_error_handling | standards_check | `fn f113(dir) -> t70` |
+| f114 | check_secrets | standards_check | `fn f114(dir) -> t70` |
+| f115 | check_cargo_meta | standards_check | `fn f115(cargo_content) -> t70` |
+| f116 | check_portfolio | standards_check | `fn f116(projects) -> t72` |
+| t70 | CheckResult | standards_check | struct { s80: name, s81: passed, s82: detail } |
+| t71 | ProjectReport | standards_check | struct { s83: name, s84: path, s85: checks } |
+| t72 | PortfolioReport | standards_check | struct { s86: reports } |
+
 ## Ranges
 
 | Range | Module |
@@ -104,10 +129,13 @@ Doc comments on each symbol map to human-readable names.
 | f88–f89 | video |
 | f90 | demo |
 | f95 | baked_demo |
+| f100–f116 | standards_check |
 | t60–t63 | screenshot |
 | t64–t65 | video |
 | t66–t67 | demo |
+| t70–t72 | standards_check |
 | s60–s63 | t61 fields |
 | s64–s70 | t62 fields |
 | s71–s74 | t63 fields |
 | s75–s78 | t67 fields |
+| s80–s86 | t70–t72 fields |

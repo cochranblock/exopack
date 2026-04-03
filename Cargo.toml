@@ -36,6 +36,8 @@ baked_demo = ["interface", "serde_json"]
 triple_sims = []
 # devtools: headless browser console check via CDP (chromiumoxide)
 devtools = ["chromiumoxide", "chromiumoxide/fetcher", "chromiumoxide/rustls", "chromiumoxide/zip8", "dirs", "futures", "tokio", "serde_json"]
+# standards_check: Rust industry standards gate for the whole portfolio
+standards_check = []
 
 [dependencies]
 scraper = { version = "0.19", optional = true }
