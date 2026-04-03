@@ -28,21 +28,21 @@ flowchart TD
 
 | Metric | Value |
 |--------|-------|
-| Source LOC | 2,458 across 12 source files |
-| Modules | 9 (triple_sims, screenshot, devtools, mock, interface, video, demo, baked_demo, standards_check) |
-| Public functions | 44 library + CLI (f60–f116) |
-| Public types | 11 (t60–t67, t70–t72) |
-| Feature gates | 8 feature-gated + video (always compiled, xcap optional) |
+| Source LOC | 3,698 across 16 source files |
+| Modules | 13 (triple_sims, screenshot, devtools, mock, interface, video, demo, baked_demo, standards_check, checkpoint, compaction, dual_mode, perm_gate) |
+| Public functions | 64 library + CLI (f60–f139) |
+| Public types | 19 (t60–t67, t70–t80) |
+| Feature gates | 12 feature-gated + video (always compiled, xcap optional) |
 | Direct deps (all features) | 17 from crates.io |
 | Direct deps (standards_check) | 0 — pure std + cargo CLI |
-| Unit tests | 23 across screenshot, triple_sims, demo, video, standards_check |
+| Unit tests | 61 across screenshot, triple_sims, demo, video, standards_check, checkpoint, compaction, dual_mode, perm_gate |
 | Integration tests | 1 (portfolio_standards_gate — 14 checks x 10 projects) |
 | Binary size (release, ARM, with govdocs) | 370,592 bytes (362 KB) |
 | Binary size (release, Linux x86_64) | 393,288 bytes (384 KB) |
 | Release profile | opt-level='z', lto=true, codegen-units=1, panic='abort', strip=true |
 | Projects using exopack | 5+ (cochranblock, kova, oakilydokily, whyyoulying, wowasticker) |
 | Architecture doc | 2,286 lines — testing philosophy, patterns, anti-patterns |
-| Compression map | P13 complete — 44 functions, 11 types, 26 fields, 1 CLI command |
+| Compression map | P13 complete — 64 functions, 19 types, 46 fields, 1 CLI command |
 | Federal compliance docs | 12 documents in govdocs/ (SBOM, SSDF, FIPS, CMMC, supply chain audit) |
 | Known vulnerabilities | 1 (idna 0.3.0 — non-exploitable on localhost, documented) |
 | GitHub Release | v0.1.0 — macOS ARM + Linux x86_64 binaries |

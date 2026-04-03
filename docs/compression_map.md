@@ -117,6 +117,49 @@ Doc comments on each symbol map to human-readable names.
 | t71 | ProjectReport | standards_check | struct { s83: name, s84: path, s85: checks } |
 | t72 | PortfolioReport | standards_check | struct { s86: reports } |
 
+## Checkpoint (f120+, t73+)
+
+| Token | Human Name | Module | Signature |
+|-------|-----------|--------|-----------|
+| f121 | checkpoint | checkpoint | `fn f121(&mut self, path) -> Option<t74>` |
+| f122 | undo | checkpoint | `fn f122(&self, path) -> t74` |
+| f123 | undo_to_index | checkpoint | `fn f123(&self, path, index) -> t74` |
+| f124 | count | checkpoint | `fn f124(&self, path) -> usize` |
+| f125 | verify | checkpoint | `fn f125(&self, path) -> t74` |
+| t73 | CheckpointStore | checkpoint | struct { s87: HashMap<PathBuf, Vec<(u128, Vec<u8>)>> } |
+| t74 | CheckpointResult | checkpoint | struct { s88: ok, s89: detail, s90: bytes } |
+
+## Compaction (f130+, t75+)
+
+| Token | Human Name | Module | Signature |
+|-------|-----------|--------|-----------|
+| f130 | estimate_tokens | compaction | `fn f130(text) -> usize` |
+| f131 | split_turns | compaction | `fn f131(conversation) -> Vec<String>` |
+| f132 | compact | compaction | `fn f132(conversation, budget, summarize) -> t76` |
+| t75 | ContextBudget | compaction | struct { s91: total, s92: used } |
+| t76 | CompactionResult | compaction | struct { s93..s98 } |
+
+## Dual Mode (f133+, t77+)
+
+| Token | Human Name | Module | Signature |
+|-------|-----------|--------|-----------|
+| f133 | parse_mode | dual_mode | `fn f133(env_value) -> t77` |
+| f134 | route | dual_mode | `fn f134(mode, model_path, has_key) -> t78` |
+| f135 | validate | dual_mode | `fn f135(decision) -> Result<String, String>` |
+| t77 | InferenceMode | dual_mode | enum { Local, Remote, Auto } |
+| t78 | RoutingDecision | dual_mode | struct { s99..s103 } |
+
+## Permission Gate (f136+, t79+)
+
+| Token | Human Name | Module | Signature |
+|-------|-----------|--------|-----------|
+| f136 | parse_perm_mode | perm_gate | `fn f136(env_value) -> t79` |
+| f137 | check_permission | perm_gate | `fn f137(mode, tool, cmd) -> t80` |
+| f138 | normalize_tool | perm_gate | `fn f138(tool_name) -> &str` |
+| f139 | detect_mutations | perm_gate | `fn f139(command) -> Vec<&str>` |
+| t79 | PermMode | perm_gate | enum { Open, Guarded } |
+| t80 | PermResult | perm_gate | struct { s104..s106 } |
+
 ## Ranges
 
 | Range | Module |
@@ -130,12 +173,24 @@ Doc comments on each symbol map to human-readable names.
 | f90 | demo |
 | f95 | baked_demo |
 | f100–f116 | standards_check |
+| f120–f125 | checkpoint |
+| f130–f132 | compaction |
+| f133–f135 | dual_mode |
+| f136–f139 | perm_gate |
 | t60–t63 | screenshot |
 | t64–t65 | video |
 | t66–t67 | demo |
 | t70–t72 | standards_check |
+| t73–t74 | checkpoint |
+| t75–t76 | compaction |
+| t77–t78 | dual_mode |
+| t79–t80 | perm_gate |
 | s60–s63 | t61 fields |
 | s64–s70 | t62 fields |
 | s71–s74 | t63 fields |
 | s75–s78 | t67 fields |
 | s80–s86 | t70–t72 fields |
+| s87–s90 | t73–t74 fields |
+| s91–s98 | t75–t76 fields |
+| s99–s103 | t77–t78 fields |
+| s104–s106 | t79–t80 fields |
