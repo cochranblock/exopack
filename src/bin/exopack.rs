@@ -24,7 +24,10 @@ const GOVDOC_FEDERAL_USE: &str = include_str!("../../govdocs/FEDERAL_USE_CASES.m
 const CARGO_TOML: &str = include_str!("../../Cargo.toml");
 
 fn print_usage() {
-    eprintln!("{} {} — testing augmentation for Rust binaries", PKG_NAME, VERSION);
+    eprintln!(
+        "{} {} — testing augmentation for Rust binaries",
+        PKG_NAME, VERSION
+    );
     eprintln!();
     eprintln!("Usage:");
     eprintln!("  exopack live-demo <project_dir> [bin_name] [cargo_args...]");
@@ -127,7 +130,10 @@ fn cmd_govdocs(args: &[String]) {
             return;
         }
         _ => {
-            eprintln!("Unknown govdocs topic: {}. Run 'exopack govdocs' for list.", topic);
+            eprintln!(
+                "Unknown govdocs topic: {}. Run 'exopack govdocs' for list.",
+                topic
+            );
             exit(1);
         }
     };
@@ -160,10 +166,7 @@ fn print_live_deps() {
                 let version = if rest.starts_with('"') {
                     rest.trim_matches('"').to_string()
                 } else if rest.contains("version") {
-                    rest.split('"')
-                        .nth(1)
-                        .unwrap_or("?")
-                        .to_string()
+                    rest.split('"').nth(1).unwrap_or("?").to_string()
                 } else {
                     "?".to_string()
                 };
@@ -176,11 +179,19 @@ fn print_live_deps() {
     println!("{:<20} {:<10} {}", "CRATE", "VERSION", "OPTIONAL");
     println!("{:<20} {:<10} {}", "-----", "-------", "--------");
     for (name, ver, opt) in &deps {
-        println!("{:<20} {:<10} {}", name, ver, if *opt { "yes" } else { "no" });
+        println!(
+            "{:<20} {:<10} {}",
+            name,
+            ver,
+            if *opt { "yes" } else { "no" }
+        );
     }
     println!();
-    println!("Total: {} direct dependencies ({} optional)",
-        deps.len(), deps.iter().filter(|d| d.2).count());
+    println!(
+        "Total: {} direct dependencies ({} optional)",
+        deps.len(),
+        deps.iter().filter(|d| d.2).count()
+    );
 }
 
 /// Print SPDX 2.3 format SBOM — machine-readable for federal scanners.
@@ -189,7 +200,10 @@ fn print_spdx_sbom() {
     println!("DataLicense: CC0-1.0");
     println!("SPDXID: SPDXRef-DOCUMENT");
     println!("DocumentName: {}-{}", PKG_NAME, VERSION);
-    println!("DocumentNamespace: https://github.com/cochranblock/{}/releases/tag/v{}", PKG_NAME, VERSION);
+    println!(
+        "DocumentNamespace: https://github.com/cochranblock/{}/releases/tag/v{}",
+        PKG_NAME, VERSION
+    );
     println!("Creator: Tool: exopack-{}", VERSION);
     println!();
 
@@ -197,7 +211,10 @@ fn print_spdx_sbom() {
     println!("PackageName: {}", PKG_NAME);
     println!("SPDXID: SPDXRef-Package");
     println!("PackageVersion: {}", VERSION);
-    println!("PackageDownloadLocation: https://github.com/cochranblock/{}", PKG_NAME);
+    println!(
+        "PackageDownloadLocation: https://github.com/cochranblock/{}",
+        PKG_NAME
+    );
     println!("PackageLicenseConcluded: Unlicense");
     println!("PackageLicenseDeclared: Unlicense");
     println!("PackageCopyrightText: NOASSERTION");
@@ -231,8 +248,14 @@ fn print_spdx_sbom() {
                 println!("PackageName: {}", name);
                 println!("SPDXID: {}", spdx_id);
                 println!("PackageVersion: {}", version);
-                println!("PackageDownloadLocation: https://crates.io/crates/{}/{}", name, version);
-                println!("ExternalRef: PACKAGE-MANAGER purl pkg:cargo/{}@{}", name, version);
+                println!(
+                    "PackageDownloadLocation: https://crates.io/crates/{}/{}",
+                    name, version
+                );
+                println!(
+                    "ExternalRef: PACKAGE-MANAGER purl pkg:cargo/{}@{}",
+                    name, version
+                );
                 println!("PackageLicenseConcluded: NOASSERTION");
                 println!("Relationship: SPDXRef-Package DEPENDS_ON {}", spdx_id);
                 println!();
@@ -257,20 +280,34 @@ fn cmd_live_demo(args: &[String]) {
         exit(1);
     }
 
-    let (bin_name, cargo_args): (String, Vec<&str>) = if args.len() >= 2 && !args[1].starts_with('-') {
-        (args[1].clone(), args[2..].iter().map(|s| s.as_str()).collect())
-    } else {
-        match exopack::triple_sims::f63_discover_test_bin(&project_dir) {
-            Some(b) => (b, args[1..].iter().map(|s| s.as_str()).collect()),
-            None => {
-                eprintln!("No *-test binary found in {}. Specify bin_name explicitly.", project_dir.display());
-                eprintln!("  exopack live-demo {} <bin_name> [cargo_args...]", project_dir.display());
-                exit(1);
+    let (bin_name, cargo_args): (String, Vec<&str>) =
+        if args.len() >= 2 && !args[1].starts_with('-') {
+            (
+                args[1].clone(),
+                args[2..].iter().map(|s| s.as_str()).collect(),
+            )
+        } else {
+            match exopack::triple_sims::f63_discover_test_bin(&project_dir) {
+                Some(b) => (b, args[1..].iter().map(|s| s.as_str()).collect()),
+                None => {
+                    eprintln!(
+                        "No *-test binary found in {}. Specify bin_name explicitly.",
+                        project_dir.display()
+                    );
+                    eprintln!(
+                        "  exopack live-demo {} <bin_name> [cargo_args...]",
+                        project_dir.display()
+                    );
+                    exit(1);
+                }
             }
-        }
-    };
+        };
 
-    println!("exopack live-demo: building and running {} in {}...", bin_name, project_dir.display());
+    println!(
+        "exopack live-demo: building and running {} in {}...",
+        bin_name,
+        project_dir.display()
+    );
     match exopack::triple_sims::f62_live_demo(&project_dir, bin_name.as_str(), &cargo_args) {
         Ok(status) => exit(status.code().unwrap_or(1)),
         Err(e) => {

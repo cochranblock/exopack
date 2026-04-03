@@ -6,6 +6,7 @@
 name = "exopack"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.75"
 description = "Testing augmentation for Rust binaries: TRIPLE SIMS determinism, visual regression, screenshot capture, API mocking, demo record/replay"
 license = "Unlicense"
 repository = "https://github.com/cochranblock/exopack"

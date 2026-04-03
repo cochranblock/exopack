@@ -18,12 +18,14 @@ pub fn f61_with_args(project_dir: &Path, n: u32, args: &[&str]) -> (bool, String
         let mut cmd = Command::new("cargo");
         cmd.arg("test").current_dir(project_dir);
         cmd.args(args);
-        match cmd.output()
-        {
+        match cmd.output() {
             Ok(o) if o.status.success() => continue,
             Ok(o) => {
                 let stderr = String::from_utf8_lossy(&o.stderr).into_owned();
-                return (false, format!("TRIPLE SIMS pass {}/{} failed:\n{}", i, n, stderr));
+                return (
+                    false,
+                    format!("TRIPLE SIMS pass {}/{} failed:\n{}", i, n, stderr),
+                );
             }
             Err(e) => return (false, format!("cargo test: {}", e)),
         }
@@ -43,7 +45,11 @@ pub fn f63_discover_test_bin(project_dir: &Path) -> Option<String> {
             continue;
         }
         if in_bin && trimmed.starts_with("name = ") {
-            if let Some(name) = trimmed.strip_prefix("name = ").and_then(|s| s.strip_prefix('"')).and_then(|s| s.strip_suffix('"')) {
+            if let Some(name) = trimmed
+                .strip_prefix("name = ")
+                .and_then(|s| s.strip_prefix('"'))
+                .and_then(|s| s.strip_suffix('"'))
+            {
                 if name.ends_with("-test") {
                     return Some(name.to_string());
                 }
@@ -118,7 +124,11 @@ mod tests {
         let manifest = dir.join("Cargo.toml");
         let mut f = std::fs::File::create(&manifest).unwrap();
         writeln!(f, "[package]\nname = \"foo\"\nversion = \"0.1.0\"\n").unwrap();
-        writeln!(f, "[[bin]]\nname = \"foo-test\"\npath = \"src/bin/test.rs\"").unwrap();
+        writeln!(
+            f,
+            "[[bin]]\nname = \"foo-test\"\npath = \"src/bin/test.rs\""
+        )
+        .unwrap();
         drop(f);
 
         assert_eq!(f63_discover_test_bin(&dir), Some("foo-test".to_string()));

@@ -36,17 +36,31 @@ pub struct t72 {
 
 impl t70 {
     fn pass(name: &'static str, detail: impl Into<String>) -> Self {
-        Self { s80: name, s81: true, s82: detail.into() }
+        Self {
+            s80: name,
+            s81: true,
+            s82: detail.into(),
+        }
     }
     fn fail(name: &'static str, detail: impl Into<String>) -> Self {
-        Self { s80: name, s81: false, s82: detail.into() }
+        Self {
+            s80: name,
+            s81: false,
+            s82: detail.into(),
+        }
     }
 }
 
 impl t71 {
-    pub fn passed(&self) -> usize { self.s85.iter().filter(|c| c.s81).count() }
-    pub fn failed(&self) -> usize { self.s85.iter().filter(|c| !c.s81).count() }
-    pub fn total(&self) -> usize { self.s85.len() }
+    pub fn passed(&self) -> usize {
+        self.s85.iter().filter(|c| c.s81).count()
+    }
+    pub fn failed(&self) -> usize {
+        self.s85.iter().filter(|c| !c.s81).count()
+    }
+    pub fn total(&self) -> usize {
+        self.s85.len()
+    }
 }
 
 impl t72 {
@@ -90,7 +104,8 @@ impl t72 {
 
 /// f101: Run all 14 standards checks on a single project
 pub fn f101(project_dir: &Path) -> t71 {
-    let name = project_dir.file_name()
+    let name = project_dir
+        .file_name()
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_else(|| "unknown".to_string());
 
@@ -129,7 +144,11 @@ pub fn f101(project_dir: &Path) -> t71 {
         f115(&cargo_content),           // Cargo.toml metadata
     ];
 
-    t71 { s83: name, s84: project_dir.to_path_buf(), s85: checks }
+    t71 {
+        s83: name,
+        s84: project_dir.to_path_buf(),
+        s85: checks,
+    }
 }
 
 /// f116: Run standards check on multiple projects, return portfolio report
@@ -185,7 +204,8 @@ fn f104(dir: &Path) -> t70 {
             let stdout_str = String::from_utf8_lossy(&out.stdout);
             let stderr = String::from_utf8_lossy(&out.stderr);
             let combined = format!("{}{}", stdout_str, stderr);
-            let vuln_count = combined.lines()
+            let vuln_count = combined
+                .lines()
                 .filter(|l| l.starts_with("RUSTSEC-"))
                 .count();
             // cargo audit exits non-zero for warnings too; only fail on actual vulns
@@ -226,7 +246,8 @@ fn f105(dir: &Path) -> t70 {
 /// f106: MSRV declared (rust-version field)
 fn f106(cargo_content: &str) -> t70 {
     if cargo_content.contains("rust-version") {
-        let version = cargo_content.lines()
+        let version = cargo_content
+            .lines()
             .find(|l| l.starts_with("rust-version"))
             .and_then(|l| l.split('=').nth(1))
             .map(|v| v.trim().trim_matches('"'))
@@ -257,12 +278,29 @@ fn f107(dir: &Path) -> t70 {
         return t70::pass("unsafe", "#![forbid(unsafe_code)]");
     }
 
-    // Count unsafe blocks in source
-    let unsafe_count = count_pattern_in_rs(dir, "unsafe ");
+    // Count actual unsafe blocks/fns in source (not string literals or comments)
+    let mut unsafe_count = 0u32;
+    let src_dir2 = dir.join("src");
+    if src_dir2.exists() {
+        visit_rs_files(&src_dir2, &mut |content, _path| {
+            for line in content.lines() {
+                let t = line.trim();
+                if t.starts_with("//") || t.contains(".contains(") {
+                    continue;
+                }
+                if t.contains("unsafe {") || t.contains("unsafe fn ") {
+                    unsafe_count += 1;
+                }
+            }
+        });
+    }
     if unsafe_count == 0 {
         t70::fail("unsafe", "no unsafe but missing #![forbid(unsafe_code)]")
     } else {
-        t70::fail("unsafe", format!("{} unsafe usages, no forbid", unsafe_count))
+        t70::fail(
+            "unsafe",
+            format!("{} unsafe usages, no forbid", unsafe_count),
+        )
     }
 }
 
@@ -297,7 +335,13 @@ fn f109(dir: &Path) -> t70 {
 
 /// f110: LICENSE/UNLICENSE file present
 fn f110(dir: &Path) -> t70 {
-    let candidates = ["LICENSE", "UNLICENSE", "LICENSE.md", "LICENSE-MIT", "LICENSE-APACHE"];
+    let candidates = [
+        "LICENSE",
+        "UNLICENSE",
+        "LICENSE.md",
+        "LICENSE-MIT",
+        "LICENSE-APACHE",
+    ];
     for name in &candidates {
         if dir.join(name).exists() {
             return t70::pass("license_file", format!("{} exists", name));
@@ -344,7 +388,10 @@ fn f112(dir: &Path) -> t70 {
     if unjustified == 0 {
         t70::pass("allow_unused", "no unjustified #[allow(unused)]")
     } else {
-        t70::fail("allow_unused", format!("{} unjustified #[allow(unused)]", unjustified))
+        t70::fail(
+            "allow_unused",
+            format!("{} unjustified #[allow(unused)]", unjustified),
+        )
     }
 }
 
@@ -362,18 +409,26 @@ fn f113(dir: &Path) -> t70 {
         if path_str.contains("/bin/") || path_str.contains("/tests/") {
             return;
         }
-        for line in content.lines() {
+        // Find line number where #[cfg(test)] appears — everything after is test code
+        let test_block_start = content
+            .lines()
+            .enumerate()
+            .find(|(_, l)| l.contains("#[cfg(test)]"))
+            .map(|(i, _)| i);
+
+        for (line_num, line) in content.lines().enumerate() {
+            // Skip everything in #[cfg(test)] block
+            if let Some(start) = test_block_start {
+                if line_num >= start {
+                    break;
+                }
+            }
             let trimmed = line.trim();
-            // Skip test functions and comments
-            if trimmed.starts_with("//") || trimmed.starts_with("#[test") {
+            if trimmed.starts_with("//") {
                 continue;
             }
-            // Count .unwrap() calls outside of test modules
             if trimmed.contains(".unwrap()") {
-                // Check if we're inside a #[cfg(test)] module — rough heuristic
-                if !content.contains("#[cfg(test)]") || !is_in_test_block(content, trimmed) {
-                    unwrap_count += 1;
-                }
+                unwrap_count += 1;
             }
         }
     });
@@ -381,15 +436,27 @@ fn f113(dir: &Path) -> t70 {
     if unwrap_count == 0 {
         t70::pass("error_handling", "no unwrap() in library code")
     } else if unwrap_count <= 5 {
-        t70::fail("error_handling", format!("{} unwrap() in lib code (minor)", unwrap_count))
+        t70::fail(
+            "error_handling",
+            format!("{} unwrap() in lib code (minor)", unwrap_count),
+        )
     } else {
-        t70::fail("error_handling", format!("{} unwrap() in lib code", unwrap_count))
+        t70::fail(
+            "error_handling",
+            format!("{} unwrap() in lib code", unwrap_count),
+        )
     }
 }
 
 /// f114: No hardcoded secrets or .env committed
 fn f114(dir: &Path) -> t70 {
-    let bad_files = [".env", ".env.local", "secrets.json", "credentials.json", ".env.production"];
+    let bad_files = [
+        ".env",
+        ".env.local",
+        "secrets.json",
+        "credentials.json",
+        ".env.production",
+    ];
     let mut found = Vec::new();
     for name in &bad_files {
         if dir.join(name).exists() {
@@ -404,10 +471,19 @@ fn f114(dir: &Path) -> t70 {
         visit_rs_files(&src_dir, &mut |content, _path| {
             for line in content.lines() {
                 let trimmed = line.trim();
-                if trimmed.starts_with("//") { continue; }
-                // Common secret patterns
-                if (trimmed.contains("sk-") || trimmed.contains("AKIA"))
-                    && !trimmed.contains("env!") && !trimmed.contains("env::var")
+                if trimmed.starts_with("//") {
+                    continue;
+                }
+                // Skip lines that are part of detection logic (contain .contains())
+                if trimmed.contains(".contains(") {
+                    continue;
+                }
+                // Common secret patterns: API keys that look like real credentials
+                let secret_prefix = "sk\x2d"; // split to avoid self-match
+                let aws_prefix = "AK\x49A";
+                if (trimmed.contains(secret_prefix) || trimmed.contains(aws_prefix))
+                    && !trimmed.contains("env!")
+                    && !trimmed.contains("env::var")
                 {
                     hardcoded += 1;
                 }
@@ -423,7 +499,9 @@ fn f114(dir: &Path) -> t70 {
             msg.push_str(&format!("files: {:?}", found));
         }
         if hardcoded > 0 {
-            if !msg.is_empty() { msg.push_str(", "); }
+            if !msg.is_empty() {
+                msg.push_str(", ");
+            }
             msg.push_str(&format!("{} hardcoded patterns", hardcoded));
         }
         t70::fail("secrets", msg)
@@ -437,9 +515,15 @@ fn f115(cargo_content: &str) -> t70 {
     let has_repo = cargo_content.lines().any(|l| l.starts_with("repository"));
 
     let mut missing = Vec::new();
-    if !has_desc { missing.push("description"); }
-    if !has_license { missing.push("license"); }
-    if !has_repo { missing.push("repository"); }
+    if !has_desc {
+        missing.push("description");
+    }
+    if !has_license {
+        missing.push("license");
+    }
+    if !has_repo {
+        missing.push("repository");
+    }
 
     if missing.is_empty() {
         t70::pass("cargo_meta", "description + license + repository")
@@ -451,7 +535,9 @@ fn f115(cargo_content: &str) -> t70 {
 // --- Helpers ---
 
 fn visit_rs_files(dir: &Path, callback: &mut dyn FnMut(&str, &Path)) {
-    let Ok(entries) = std::fs::read_dir(dir) else { return };
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
     for entry in entries.flatten() {
         let path = entry.path();
         if path.is_dir() {
@@ -464,34 +550,13 @@ fn visit_rs_files(dir: &Path, callback: &mut dyn FnMut(&str, &Path)) {
     }
 }
 
-fn count_pattern_in_rs(dir: &Path, pattern: &str) -> u32 {
-    let mut count = 0u32;
-    let src_dir = dir.join("src");
-    if src_dir.exists() {
-        visit_rs_files(&src_dir, &mut |content, _path| {
-            count += content.matches(pattern).count() as u32;
-        });
-    }
-    count
-}
-
-fn is_in_test_block(content: &str, target_line: &str) -> bool {
-    let mut in_test = false;
-    for line in content.lines() {
-        if line.contains("#[cfg(test)]") { in_test = true; }
-        if line.trim() == target_line && in_test { return true; }
-    }
-    false
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::fs;
 
     fn tmp_project(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir()
-            .join(format!("exopack_std_{}_{}", name, std::process::id()));
+        let dir = std::env::temp_dir().join(format!("exopack_std_{}_{}", name, std::process::id()));
         let _ = fs::remove_dir_all(&dir);
         fs::create_dir_all(dir.join("src")).unwrap();
         dir
@@ -635,7 +700,11 @@ name = "foo"
     #[test]
     fn forbid_unsafe_pass() {
         let dir = tmp_project("safe");
-        fs::write(dir.join("src").join("lib.rs"), "#![forbid(unsafe_code)]\npub fn foo() {}\n").unwrap();
+        fs::write(
+            dir.join("src").join("lib.rs"),
+            "#![forbid(unsafe_code)]\npub fn foo() {}\n",
+        )
+        .unwrap();
         let result = f107(&dir);
         assert!(result.s81, "should pass with forbid: {}", result.s82);
         let _ = fs::remove_dir_all(&dir);
@@ -653,7 +722,9 @@ name = "foo"
     #[test]
     fn full_report_structure() {
         let dir = tmp_project("full");
-        fs::write(dir.join("Cargo.toml"), r#"
+        fs::write(
+            dir.join("Cargo.toml"),
+            r#"
 [package]
 name = "test"
 version = "0.1.0"
@@ -661,8 +732,14 @@ description = "test"
 license = "Unlicense"
 repository = "https://example.com"
 rust-version = "1.75"
-"#).unwrap();
-        fs::write(dir.join("src").join("lib.rs"), "#![forbid(unsafe_code)]\n//! docs\n").unwrap();
+"#,
+        )
+        .unwrap();
+        fs::write(
+            dir.join("src").join("lib.rs"),
+            "#![forbid(unsafe_code)]\n//! docs\n",
+        )
+        .unwrap();
         fs::write(dir.join("UNLICENSE"), "public domain").unwrap();
         fs::write(dir.join("CHANGELOG.md"), "# Changes").unwrap();
 

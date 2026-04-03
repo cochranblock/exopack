@@ -43,6 +43,10 @@ fn portfolio_standards_gate() {
     // Report summary
     let total_checks: usize = report.s86.iter().map(|p| p.total()).sum();
     let total_passed: usize = report.s86.iter().map(|p| p.passed()).sum();
-    println!("\nPORTFOLIO: {}/{} checks passed across {} projects",
-        total_passed, total_checks, report.s86.len());
+    println!(
+        "\nPORTFOLIO: {}/{} checks passed across {} projects",
+        total_passed,
+        total_checks,
+        report.s86.len()
+    );
 }

@@ -9,11 +9,7 @@ use std::time::Duration;
 /// f95 = run_baked_demo. Every CLI subcommand + every HTTP endpoint.
 /// Replicates intended usage as if the user were using it. No recording.
 /// Returns Ok(()) if all steps pass.
-pub async fn f95(
-    kova_bin: &Path,
-    home: &Path,
-    port: u16,
-) -> Result<(), String> {
+pub async fn f95(kova_bin: &Path, home: &Path, port: u16) -> Result<(), String> {
     let env_home = home.to_string_lossy().to_string();
 
     // 1–5. CLI: bootstrap, prompts, model list, recent, c2 nodes (spawn_blocking to avoid blocking runtime)
@@ -24,9 +20,15 @@ pub async fn f95(
     };
     run(vec!["bootstrap"]).await.map_err(|e| e.to_string())??;
     run(vec!["prompts"]).await.map_err(|e| e.to_string())??;
-    run(vec!["model", "list"]).await.map_err(|e| e.to_string())??;
-    run(vec!["recent", "--minutes", "60"]).await.map_err(|e| e.to_string())??;
-    run(vec!["c2", "nodes"]).await.map_err(|e| e.to_string())??;
+    run(vec!["model", "list"])
+        .await
+        .map_err(|e| e.to_string())??;
+    run(vec!["recent", "--minutes", "60"])
+        .await
+        .map_err(|e| e.to_string())??;
+    run(vec!["c2", "nodes"])
+        .await
+        .map_err(|e| e.to_string())??;
 
     // 6. HTTP: spawn serve
     let demo_dir = home.join(".kova").join("demos");
@@ -57,7 +59,10 @@ pub async fn f95(
     get_ok(&client, &format!("{}/api/status", base)).await?;
     let elapsed = start.elapsed();
     if elapsed.as_secs_f64() > 2.0 {
-        return Err(format!("api/status latency {}s exceeds 2s baseline", elapsed.as_secs_f64()));
+        return Err(format!(
+            "api/status latency {}s exceeds 2s baseline",
+            elapsed.as_secs_f64()
+        ));
     }
 
     // 9. GET /api/project

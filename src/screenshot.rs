@@ -37,12 +37,7 @@ pub fn f78() -> t60 {
 
 /// f79 = capture_project. Fetches each page, renders via headless browser (devtools) or placeholder.
 /// Returns true if all captures succeed.
-pub async fn f79(
-    base: &str,
-    project: &str,
-    pages: &[(&str, &str)],
-    _theme: &t60,
-) -> bool {
+pub async fn f79(base: &str, project: &str, pages: &[(&str, &str)], _theme: &t60) -> bool {
     let dir = f70(project);
     if let Err(e) = std::fs::create_dir_all(&dir) {
         eprintln!("screenshot: mkdir {}: {}", dir.display(), e);
@@ -147,9 +142,10 @@ pub fn f71(
     let tol = tolerance as i16;
 
     for (pa, pb) in rgba_a.pixels().zip(rgba_b.pixels()) {
-        let differs = pa.0[..3].iter().zip(pb.0[..3].iter()).any(|(&a, &b)| {
-            (a as i16 - b as i16).abs() > tol
-        });
+        let differs = pa.0[..3]
+            .iter()
+            .zip(pb.0[..3].iter())
+            .any(|(&a, &b)| (a as i16 - b as i16).abs() > tol);
         if differs {
             diff_pixels += 1;
         }
@@ -194,9 +190,10 @@ pub fn f72(
     for (x, y, pixel) in diff_img.enumerate_pixels_mut() {
         let pa = rgba_a.get_pixel(x, y);
         let pb = rgba_b.get_pixel(x, y);
-        let differs = pa.0[..3].iter().zip(pb.0[..3].iter()).any(|(&a, &b)| {
-            (a as i16 - b as i16).abs() > tol
-        });
+        let differs = pa.0[..3]
+            .iter()
+            .zip(pb.0[..3].iter())
+            .any(|(&a, &b)| (a as i16 - b as i16).abs() > tol);
         *pixel = if differs {
             image::Rgba([255, 0, 0, 200])
         } else {
@@ -204,7 +201,9 @@ pub fn f72(
         };
     }
 
-    diff_img.save(out).map_err(|e| format!("save {}: {}", out.display(), e))
+    diff_img
+        .save(out)
+        .map_err(|e| format!("save {}: {}", out.display(), e))
 }
 
 /// t62 = PageResult. Per-page result from visual regression.
@@ -231,13 +230,19 @@ impl t63 {
         println!("SIM 4 VISUAL REGRESSION: {} pages", self.pages.len());
         for p in &self.pages {
             let icon = if p.passed { "OK" } else { "FAIL" };
-            println!("  [{}] {} — {} (diff {:.2}%)", icon, p.name, p.status, p.diff_pct);
+            println!(
+                "  [{}] {} — {} (diff {:.2}%)",
+                icon, p.name, p.status, p.diff_pct
+            );
             if let Some(ref d) = p.diff_image {
                 println!("       diff: {}", d.display());
             }
         }
         if self.baselines_created > 0 {
-            println!("  {} new baselines saved (re-run to compare)", self.baselines_created);
+            println!(
+                "  {} new baselines saved (re-run to compare)",
+                self.baselines_created
+            );
         }
         let pass_count = self.pages.iter().filter(|p| p.passed).count();
         println!("SIM 4: {}/{} pages OK", pass_count, self.pages.len());
@@ -302,7 +307,11 @@ pub async fn f73(
 
         if !baseline.exists() {
             if let Err(e) = std::fs::copy(&actual, &baseline) {
-                eprintln!("visual_regression: save baseline {}: {}", baseline.display(), e);
+                eprintln!(
+                    "visual_regression: save baseline {}: {}",
+                    baseline.display(),
+                    e
+                );
                 results.push(t62 {
                     name: name.to_string(),
                     passed: false,
@@ -353,9 +362,15 @@ pub async fn f73(
                     baseline,
                     diff_image,
                     status: if cmp.matches {
-                        format!("{:.2}% diff (within {:.1}% threshold)", cmp.diff_pct, threshold)
+                        format!(
+                            "{:.2}% diff (within {:.1}% threshold)",
+                            cmp.diff_pct, threshold
+                        )
                     } else {
-                        format!("{:.2}% diff (exceeds {:.1}% threshold)", cmp.diff_pct, threshold)
+                        format!(
+                            "{:.2}% diff (exceeds {:.1}% threshold)",
+                            cmp.diff_pct, threshold
+                        )
                     },
                 });
             }
@@ -402,11 +417,7 @@ pub fn f76(project: &str, pages: &[&str]) -> Result<u32, String> {
     Ok(updated)
 }
 
-async fn capture_to_dir(
-    base_url: &str,
-    pages: &[(&str, &str)],
-    dir: &std::path::Path,
-) -> bool {
+async fn capture_to_dir(base_url: &str, pages: &[(&str, &str)], dir: &std::path::Path) -> bool {
     if let Err(e) = std::fs::create_dir_all(dir) {
         eprintln!("screenshot: mkdir {}: {}", dir.display(), e);
         return false;
@@ -472,8 +483,16 @@ mod tests {
     fn out_dir_contains_os_and_project() {
         let p = f70("myproject");
         let s = p.to_string_lossy();
-        assert!(s.contains(std::env::consts::OS), "path should contain OS: {}", s);
-        assert!(s.ends_with("myproject"), "path should end with project name: {}", s);
+        assert!(
+            s.contains(std::env::consts::OS),
+            "path should contain OS: {}",
+            s
+        );
+        assert!(
+            s.ends_with("myproject"),
+            "path should end with project name: {}",
+            s
+        );
     }
 
     #[test]
@@ -548,7 +567,11 @@ mod tests {
         img_b.save(&path_b).unwrap();
 
         let result = f71(&path_a, &path_b, 10, 5.0).unwrap();
-        assert!(result.matches, "resized solid color should match: diff={:.2}%", result.diff_pct);
+        assert!(
+            result.matches,
+            "resized solid color should match: diff={:.2}%",
+            result.diff_pct
+        );
 
         let _ = std::fs::remove_dir_all(&dir);
     }

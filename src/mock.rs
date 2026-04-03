@@ -1,8 +1,8 @@
 // Copyright (c) 2026 The Cochran Block. All rights reserved.
 //! Mock APIs on demand. wiremock wrapper.
 
-use wiremock::{Mock, MockServer, ResponseTemplate};
 use wiremock::matchers::{method, path};
+use wiremock::{Mock, MockServer, ResponseTemplate};
 
 /// f82 = start_mock_server. Start a mock HTTP server on a random port. Returns (server, base_uri).
 pub async fn f82() -> (MockServer, String) {

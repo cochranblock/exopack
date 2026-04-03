@@ -9,8 +9,8 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
-use chromiumoxide::page::ScreenshotParams;
 use chromiumoxide::cdp::browser_protocol::page::CaptureScreenshotFormat;
+use chromiumoxide::page::ScreenshotParams;
 
 /// Build BrowserConfig. Uses fetcher to download Chromium when auto-detect fails.
 async fn browser_config() -> Result<chromiumoxide::BrowserConfig, String> {
@@ -30,7 +30,10 @@ async fn browser_config() -> Result<chromiumoxide::BrowserConfig, String> {
             .build()
             .map_err(|e| format!("fetcher options: {}", e))?,
     );
-    let info = fetcher.fetch().await.map_err(|e| format!("fetcher: {}", e))?;
+    let info = fetcher
+        .fetch()
+        .await
+        .map_err(|e| format!("fetcher: {}", e))?;
     chromiumoxide::BrowserConfig::builder()
         .chrome_executable(info.executable_path)
         .build()
@@ -42,12 +45,14 @@ pub async fn f74(base: &str, paths: &[&str]) -> Result<Vec<String>, String> {
     let base = base.trim_end_matches('/');
     let config = browser_config().await?;
 
-    let (mut browser, mut handler) =
-        chromiumoxide::Browser::launch(config).await.map_err(|e| format!("devtools launch: {}", e))?;
+    let (mut browser, mut handler) = chromiumoxide::Browser::launch(config)
+        .await
+        .map_err(|e| format!("devtools launch: {}", e))?;
 
-    let handle = tokio::spawn(async move {
-        while futures::StreamExt::next(&mut handler).await.is_some() {}
-    });
+    let handle =
+        tokio::spawn(
+            async move { while futures::StreamExt::next(&mut handler).await.is_some() {} },
+        );
 
     let mut all_errors = Vec::new();
     for path in paths {
@@ -67,23 +72,21 @@ pub async fn f74(base: &str, paths: &[&str]) -> Result<Vec<String>, String> {
 
 /// f75 = capture_screenshots. Launches headless Chromium, navigates to each URL, waits for render (WASM),
 /// saves PNG to out_dir. Returns true if all succeed.
-pub async fn f75(
-    base: &str,
-    pages: &[(&str, &str)],
-    out_dir: &Path,
-) -> Result<bool, String> {
+pub async fn f75(base: &str, pages: &[(&str, &str)], out_dir: &Path) -> Result<bool, String> {
     let base = base.trim_end_matches('/');
     if let Err(e) = std::fs::create_dir_all(out_dir) {
         return Err(format!("screenshot mkdir {}: {}", out_dir.display(), e));
     }
     let config = browser_config().await?;
 
-    let (mut browser, mut handler) =
-        chromiumoxide::Browser::launch(config).await.map_err(|e| format!("devtools launch: {}", e))?;
+    let (mut browser, mut handler) = chromiumoxide::Browser::launch(config)
+        .await
+        .map_err(|e| format!("devtools launch: {}", e))?;
 
-    let handle = tokio::spawn(async move {
-        while futures::StreamExt::next(&mut handler).await.is_some() {}
-    });
+    let handle =
+        tokio::spawn(
+            async move { while futures::StreamExt::next(&mut handler).await.is_some() {} },
+        );
 
     let mut ok = true;
     for (name, path) in pages {
@@ -132,10 +135,7 @@ async fn capture_one(
     Ok(())
 }
 
-async fn check_one_url(
-    browser: &chromiumoxide::Browser,
-    url: &str,
-) -> Result<Vec<String>, String> {
+async fn check_one_url(browser: &chromiumoxide::Browser, url: &str) -> Result<Vec<String>, String> {
     let page = browser
         .new_page("about:blank")
         .await
@@ -153,7 +153,9 @@ async fn check_one_url(
     let tx_clone = tx.clone();
     let logs_handle = tokio::spawn(async move {
         while let Some(event) = futures::StreamExt::next(&mut console_events).await {
-            if event.r#type == ConsoleApiCalledType::Error || event.r#type == ConsoleApiCalledType::Warning {
+            if event.r#type == ConsoleApiCalledType::Error
+                || event.r#type == ConsoleApiCalledType::Warning
+            {
                 let msg: String = event
                     .args
                     .iter()
@@ -173,13 +175,17 @@ async fn check_one_url(
         .await
         .map_err(|e| format!("log listener: {}", e))?;
 
-    let _ = page.execute(chromiumoxide::cdp::browser_protocol::log::EnableParams::default()).await;
+    let _ = page
+        .execute(chromiumoxide::cdp::browser_protocol::log::EnableParams::default())
+        .await;
 
     let tx_log = tx.clone();
     let log_handle = tokio::spawn(async move {
         while let Some(event) = futures::StreamExt::next(&mut log_events).await {
             use chromiumoxide::cdp::browser_protocol::log::LogEntryLevel;
-            if event.entry.level == LogEntryLevel::Error || event.entry.level == LogEntryLevel::Warning {
+            if event.entry.level == LogEntryLevel::Error
+                || event.entry.level == LogEntryLevel::Warning
+            {
                 let msg = event.entry.text.clone();
                 if !msg.is_empty() {
                     let _ = tx_log.send(msg);
