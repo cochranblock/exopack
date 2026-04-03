@@ -36,3 +36,6 @@ pub mod checkpoint;
 
 #[cfg(feature = "compaction")]
 pub mod compaction;
+
+#[cfg(feature = "dual_mode")]
+pub mod dual_mode;

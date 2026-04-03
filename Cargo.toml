@@ -43,6 +43,8 @@ standards_check = []
 checkpoint = []
 # compaction: test harness for context compaction patterns
 compaction = []
+# dual_mode: test harness for dual-mode inference routing
+dual_mode = []
 
 [dependencies]
 scraper = { version = "0.19", optional = true }
