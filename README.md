@@ -34,6 +34,7 @@ flowchart TB
         Devtools[devtools]
         Demo[demo]
         BakedDemo[baked_demo]
+        Standards[standards_check]
     end
 
     App --> Core[shared lib]
@@ -58,11 +59,37 @@ flowchart TB
 - **video** — Screen capture trait + xcap impl (always compiled; xcap requires `video` feature)
 - **demo** — Action script recording: WebClick, WebInput, ApiCall, EguiSend → JSON replay
 - **baked_demo** — Zero-input automation: exercises all CLI subcommands + HTTP endpoints
+- **standards_check** — 14-point Rust industry standards gate: clippy, fmt, audit, deny, MSRV, unsafe, docs, changelog, license, P16 test binary, allow(unused), error handling, secrets, Cargo.toml metadata. Runs against entire portfolio (10 projects, 140 checks)
+
+## Standards Gate (P23 Triple Lens validated)
+
+```
+cargo test --features standards_check portfolio_standards_gate -- --nocapture
+```
+
+14 checks per project. Pass/fail table across the portfolio. First baseline: 72/140.
+
+| Check | What it verifies |
+|-------|-----------------|
+| clippy | `cargo clippy -- -D warnings` zero warnings |
+| fmt | `cargo fmt --check` properly formatted |
+| audit | `cargo audit` no known vulnerabilities |
+| deny | `cargo deny check` license compliance |
+| msrv | `rust-version` declared in Cargo.toml |
+| unsafe | `#![forbid(unsafe_code)]` or justified usage |
+| docs | `//!` module docs in lib.rs or main.rs |
+| changelog | CHANGELOG.md or TIMELINE_OF_INVENTION.md exists |
+| license_file | LICENSE/UNLICENSE file present |
+| test_binary | P16 `*-test` binary in Cargo.toml |
+| allow_unused | No unjustified `#[allow(unused)]` |
+| error_handling | No `unwrap()` in library code |
+| secrets | No .env files or hardcoded keys committed |
+| cargo_meta | description, license, repository in Cargo.toml |
 
 ## Docs
 
 - [docs/testing_architecture.md](docs/testing_architecture.md) — Two-binary test model
 - [docs/ROUGH_DRAFT_EXOPACK.md](docs/ROUGH_DRAFT_EXOPACK.md) — Design notes
-- [docs/compression_map.md](docs/compression_map.md) — P13 token registry (f60–f95, t60–t67)
+- [docs/compression_map.md](docs/compression_map.md) — P13 token registry (f60–f116, t60–t72)
 - [govdocs/](govdocs/) — Federal compliance (SBOM, SSDF, FIPS, FedRAMP, CMMC, ITAR/EAR)
 - [USER_STORY_ANALYSIS.md](USER_STORY_ANALYSIS.md) — Full user walkthrough and scoring

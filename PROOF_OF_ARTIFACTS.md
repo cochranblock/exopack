@@ -21,6 +21,7 @@ flowchart TD
     Exopack --> Video[Video: xcap screen recording]
     Exopack --> Demo[Demo: Record/replay user actions]
     Exopack --> BakedDemo[BakedDemo: Zero-input automation]
+    Exopack --> Standards[Standards: 14-point Rust quality gate]
 ```
 
 ## Build Output
