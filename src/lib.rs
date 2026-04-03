@@ -11,6 +11,7 @@ pub mod interface;
 #[cfg(feature = "mock")]
 pub mod mock;
 
+#[cfg(feature = "video")]
 pub mod video;
 
 #[cfg(feature = "screenshot")]
