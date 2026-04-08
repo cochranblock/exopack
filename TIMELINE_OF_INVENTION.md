@@ -8,6 +8,81 @@
 
 ---
 
+## Human Revelations — Invented Techniques
+
+*Novel ideas that came from human insight, not AI suggestion. These are original contributions to the field.*
+
+### Triple Sims — Run 3x, All Must Pass (March 2026)
+
+**Invention:** Run the entire test suite 3 times in sequence. All 3 runs must pass for the gate to be green. If any single run fails, the gate is red. Catches flaky tests, race conditions, and non-deterministic behavior that single-run CI misses.
+
+**The Problem:** CI pipelines run tests once. A test that passes 90% of the time looks green. Race conditions in temp file handling, port binding, or async timing cause intermittent failures that developers dismiss as "flaky." The test suite lies about reliability — it reports green when the code is broken.
+
+**The Insight:** Military simulation ranges run the same scenario 3 times before certifying a system. If the weapon hits the target once, it might be luck. Three hits is a pattern. Three misses is a failure. Apply the same standard to software: run it 3 times, all 3 must pass, no exceptions.
+
+**The Technique:**
+1. `triple_sims::f60`: takes a test function, runs it 3 times sequentially
+2. Each run gets a fresh environment (new temp dirs, new ports)
+3. All 3 must return Ok — any failure fails the gate
+4. Output reports per-run pass/fail with timing
+5. Used as the CI gate for every CochranBlock project via the test binary
+
+**Result:** Caught race conditions in 4 projects (exopack temp dir collisions, ronin-sites port conflicts, oakilydokily async timing). Tests that passed on single runs failed on triple. The gate is honest.
+
+**Named:** Triple Sims (TRIPLE SIMS)
+**Commit:** `a4989c1` (initial release)
+**Origin:** Military weapons qualification — "three rounds, three hits." Michael Cochran's experience with live-fire simulation ranges where systems must demonstrate repeatable performance, not one-time luck.
+
+### Test Binary Augmentation Pattern (March 2026)
+
+**Invention:** The same Rust binary serves as both the production application and the test runner. No separate test framework, no test harness, no pytest/jest/mocha. The binary tests itself with a `--test` flag or a separate `{project}-test` binary that imports the library and runs it through Triple Sims.
+
+**The Problem:** Test frameworks are separate programs that import your code and probe it from the outside. They have their own dependencies, their own bugs, their own versioning. A test framework that doesn't match the production runtime can produce false positives. And test framework dependencies bloat the supply chain.
+
+**The Insight:** The binary already contains all the code. It already has all the types, all the routes, all the handlers. Why import it into a separate framework? Let the binary test itself. The test binary is the same crate with a `tests` feature gate — same dependencies, same compiler, same runtime. The test IS the product.
+
+**The Technique:**
+1. Each project has `src/tests.rs` with smoke tests (health checks, route verification, API calls)
+2. A `{project}-test` binary in `src/bin/` spawns the server on a random port, runs tests, cleans up
+3. Tests run through `exopack::triple_sims::f60` — 3x execution, all must pass
+4. The test binary shares the exact same library code as the production binary
+5. `cargo run --bin {project}-test --features tests` is the CI command
+
+**Result:** Zero external test frameworks across 16 repositories. The test binary IS the CI pipeline. Binary supply chain is smaller (no test framework deps in production). Tests run against the exact same code that ships.
+
+**Named:** Two-Binary Model (prod binary + test binary, same crate)
+**Commit:** `a4989c1` (initial release)
+**Origin:** Embedded systems testing — on a microcontroller, you can't install pytest. The firmware tests itself. Applied to web applications: the web server tests itself.
+
+### Visual Regression Orchestrator (March 2026)
+
+**Invention:** A screenshot-based visual regression system where the first run auto-creates baselines, subsequent runs compare against baselines with configurable tolerance, and failures produce red-highlight diff PNGs showing exactly which pixels changed.
+
+**The Problem:** CSS changes break layouts in ways that unit tests can't catch. A button moves 2px left. A font size changes. The page "works" (all routes return 200) but looks wrong. Visual regression tools exist but they're JavaScript-based, require Node.js, and add heavyweight dependencies.
+
+**The Insight:** A Rust binary can capture screenshots (HTML-to-SVG-to-PNG) without a browser. Compare pixel-by-pixel with tolerance for anti-aliasing. Generate diff images that highlight changes in red. Store baselines in a known directory. The first run IS the baseline — no manual setup.
+
+**The Technique:**
+1. `f73`: capture screenshots of each page, store in `~/.cache/screenshots/{os}/{project}/current/`
+2. First run: no baselines exist, so current screenshots become baselines automatically
+3. Subsequent runs: pixel-level comparison with configurable tolerance and threshold
+4. Failed comparisons generate red-highlight diff PNGs in `diffs/` directory
+5. `f76`: accept new baselines (promote current to baselines)
+
+**Result:** Visual regression testing in a 314KB binary. No Node.js, no Playwright, no browser dependency. Catches CSS regressions that unit tests miss.
+
+**Named:** Sim 4 Visual Regression Orchestrator
+**Commit:** `8724b66`
+**Origin:** Quality assurance processes in defense contracts — visual inspection of hardware builds against engineering drawings. Applied to web UI: the screenshot is the "engineering drawing," the diff is the inspection report.
+
+### 2026-04-08 — Human Revelations Documentation Pass
+
+**What:** Documented novel human-invented techniques across the full CochranBlock portfolio. Added Human Revelations section with Triple Sims, Two-Binary Model, and Visual Regression Orchestrator.
+**Commit:** See git log
+**AI Role:** AI formatted and wrote the sections. Human identified which techniques were genuinely novel, provided the origin stories, and directed the documentation pass.
+
+---
+
 ## Entries
 
 ### 2026-04-02 — Standards Check: Rust Industry Standards Quality Gate
