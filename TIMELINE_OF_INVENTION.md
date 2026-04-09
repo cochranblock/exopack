@@ -2,9 +2,21 @@
 
 # Timeline of Invention
 
-*Dated, commit-level record of what was built, when, and why.*
+*Dated, commit-level record of what was built, when, and why. Proves human-piloted AI development — not generated spaghetti.*
 
 > Every entry maps to real commits. Run `git log --oneline` to verify.
+
+## How to Read This Document
+
+Each entry follows this format:
+
+- **Date**: When the work shipped (not when it was started)
+- **What**: Concrete deliverable — binary, feature, fix, architecture change
+- **Why**: Business or technical reason driving the decision
+- **Commit**: Short hash(es) for traceability
+- **AI Role**: What the AI did vs. what the human directed
+
+This document exists because AI-assisted code has a trust problem. Anyone can generate 10,000 lines of spaghetti. This timeline proves that a human pilot directed every decision, verified every output, and shipped working software.
 
 ---
 
@@ -75,15 +87,16 @@
 **Commit:** `8724b66`
 **Origin:** Quality assurance processes in defense contracts — visual inspection of hardware builds against engineering drawings. Applied to web UI: the screenshot is the "engineering drawing," the diff is the inspection report.
 
-### 2026-04-08 — Human Revelations Documentation Pass
-
-**What:** Documented novel human-invented techniques across the full CochranBlock portfolio. Added Human Revelations section with Triple Sims, Two-Binary Model, and Visual Regression Orchestrator.
-**Commit:** See git log
-**AI Role:** AI formatted and wrote the sections. Human identified which techniques were genuinely novel, provided the origin stories, and directed the documentation pass.
-
 ---
 
 ## Entries
+
+### 2026-04-09 — MSRV Bump to 1.85 + Human Revelations Documentation Pass
+
+**What:** Two changes shipped in the current sprint. (1) Bumped `rust-version` from an older floor to `1.85` in `Cargo.toml` — matches the edition 2024 floor. Edition 2024 was already declared but MSRV lagged behind; a build on a 1.84 toolchain would have produced a misleading error. (2) Added the **Human Revelations** section to this document: Triple Sims, Two-Binary Model, and Sim 4 Visual Regression Orchestrator — each with Problem/Insight/Technique/Result/Origin. These are the human-invented ideas that distinguish the exopack from generic AI-assisted glue code.
+**Why:** Edition and MSRV must move together — otherwise the toolchain error message is the wrong one. And the Human Revelations section is the provenance record: which techniques came from a human pilot vs. which were routine code generation. Without it, the timeline looks like any other "AI wrote a library" story.
+**Commits:** `33ceb9e` (MSRV bump), `ef0eb32` (Human Revelations section)
+**AI Role:** AI made the mechanical edits (Cargo.toml version field, formatting the Human Revelations prose). Human identified which techniques were genuinely novel, provided the origin stories (weapons qualification, embedded firmware self-test, defense-contract visual inspection), and chose the MSRV target.
 
 ### 2026-04-02 — Standards Check: Rust Industry Standards Quality Gate
 
