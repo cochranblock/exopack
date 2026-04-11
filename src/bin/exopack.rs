@@ -176,8 +176,8 @@ fn print_live_deps() {
         }
     }
 
-    println!("{:<20} {:<10} {}", "CRATE", "VERSION", "OPTIONAL");
-    println!("{:<20} {:<10} {}", "-----", "-------", "--------");
+    println!("{:<20} {:<10} OPTIONAL", "CRATE", "VERSION");
+    println!("{:<20} {:<10} --------", "-----", "-------");
     for (name, ver, opt) in &deps {
         println!(
             "{:<20} {:<10} {}",
