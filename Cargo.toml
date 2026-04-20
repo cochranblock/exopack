@@ -47,6 +47,8 @@ compaction = []
 dual_mode = []
 # perm_gate: test harness for tool permission gates
 perm_gate = []
+# harvest: connect to running Chrome via CDP, automate Gemini sprite generation
+harvest = ["tokio", "futures", "serde_json", "image", "base64", "dirs", "reqwest", "tokio-tungstenite"]
 
 [dependencies]
 scraper = { version = "0.19", optional = true }
@@ -62,6 +64,7 @@ ab_glyph = { version = "0.2", optional = true }
 fontdb = { version = "0.23", optional = true }
 image = { version = "0.25", optional = true }
 dirs = { version = "5", optional = true }
+tokio-tungstenite = { version = "0.26", optional = true, features = ["rustls-tls-webpki-roots"] }
 chromiumoxide = { version = "0.9", optional = true, default-features = false }
 futures = { version = "0.3", optional = true }
 xcap = { version = "0.9", optional = true }

@@ -43,3 +43,6 @@ pub mod dual_mode;
 
 #[cfg(feature = "perm_gate")]
 pub mod perm_gate;
+
+#[cfg(feature = "harvest")]
+pub mod harvest;
