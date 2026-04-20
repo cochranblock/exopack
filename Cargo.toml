@@ -20,6 +20,11 @@ name = "exopack"
 path = "src/bin/exopack.rs"
 required-features = ["triple_sims"]
 
+[[bin]]
+name = "exopack-harvest"
+path = "src/bin/harvest_cli.rs"
+required-features = ["harvest"]
+
 [features]
 default = []
 # screenshot: pure Rust HTML→SVG→PNG capture (no Chrome)
