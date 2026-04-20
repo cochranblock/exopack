@@ -78,6 +78,11 @@ serde = { version = "1", features = ["derive"], optional = true }
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
 
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/exopack-harvest-{ target }{ archive-suffix }"
+bin-dir = "exopack-harvest-{ target }{ binary-ext }"
+pkg-fmt = "bin"
+
 [profile.release]
 opt-level = 'z'
 lto = true
