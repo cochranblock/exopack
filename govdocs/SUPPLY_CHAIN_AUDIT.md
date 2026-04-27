@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2026 The Cochran Block. All rights reserved. -->
+<!-- Unlicense — public domain — cochranblock.org -->
 # Supply Chain Security Audit — exopack
 
 *Federal-grade audit per EO 14028. 2026-03-30.*

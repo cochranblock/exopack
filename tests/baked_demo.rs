@@ -1,4 +1,4 @@
-// Copyright (c) 2026 The Cochran Block. All rights reserved.
+// Unlicense — public domain — cochranblock.org
 //! Integration tests for baked_demo (f95).
 //!
 //! f95 requires a live kova binary and a running HTTP server, so full

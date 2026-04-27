@@ -1,4 +1,4 @@
-// Copyright (c) 2026 The Cochran Block. All rights reserved.
+// Unlicense — public domain — cochranblock.org
 //! f60 = triple_sims — run test runner 3 times; all must pass.
 //! TRIPLE SIMS: 3 sequential passes, exit 0 only if all pass.
 

@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2026 The Cochran Block. All rights reserved. -->
+<!-- Unlicense — public domain — cochranblock.org -->
 # Accessibility — Section 508 / WCAG — exopack
 
 *2026-03-27.*

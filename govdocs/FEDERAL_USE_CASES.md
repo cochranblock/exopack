@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2026 The Cochran Block. All rights reserved. -->
+<!-- Unlicense — public domain — cochranblock.org -->
 # Federal Use Cases — exopack
 
 *Which agencies could use this project and how. 2026-03-27.*

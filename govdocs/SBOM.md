@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2026 The Cochran Block. All rights reserved. -->
+<!-- Unlicense — public domain — cochranblock.org -->
 # Software Bill of Materials (SBOM) — exopack
 
 *Per Executive Order 14028, Section 4(e). Generated 2026-03-27.*

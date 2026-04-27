@@ -1,4 +1,4 @@
-// Copyright (c) 2026 The Cochran Block. All rights reserved.
+// Unlicense — public domain — cochranblock.org
 //! compaction — test harness for context compaction patterns.
 //! Verifies: budget threshold, turn splitting, summary insertion, token savings.
 //! Pure std — no inference dep. Tests the structural contract.

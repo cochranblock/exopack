@@ -1,4 +1,4 @@
-// Copyright (c) 2026 The Cochran Block. All rights reserved.
+// Unlicense — public domain — cochranblock.org
 //! exopack — testing augmentation: screenshot, video, interfaces, API mocks, triple sims, demo, baked_demo.
 
 #![forbid(unsafe_code)]

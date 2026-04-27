@@ -1,4 +1,4 @@
-// Copyright (c) 2026 The Cochran Block. All rights reserved.
+// Unlicense — public domain — cochranblock.org
 //! dual_mode — test harness for dual-mode inference routing.
 //! Verifies: env-driven dispatch, local/remote/auto modes, fallback behavior.
 //! Pure std — no inference dep. Tests the routing contract.

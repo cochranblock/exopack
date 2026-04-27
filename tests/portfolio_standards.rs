@@ -1,4 +1,4 @@
-// Copyright (c) 2026 The Cochran Block. All rights reserved.
+// Unlicense — public domain — cochranblock.org
 //! Integration test: run standards check against all cochranblock projects.
 
 #[cfg(feature = "standards_check")]

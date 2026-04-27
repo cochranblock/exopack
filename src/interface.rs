@@ -1,4 +1,4 @@
-// Copyright (c) 2026 The Cochran Block. All rights reserved.
+// Unlicense — public domain — cochranblock.org
 //! Create test interfaces: spawn HTTP server, HTTP client with cookie store.
 
 /// f80 = bind_random. Bind to 127.0.0.1:0, return listener and base URL.

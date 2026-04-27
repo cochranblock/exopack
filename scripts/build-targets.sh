@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (c) 2026 The Cochran Block. All rights reserved.
+# Unlicense — public domain — cochranblock.org
 # Build exopack for macOS ARM + Linux x86_64, output to release/
 set -euo pipefail
 

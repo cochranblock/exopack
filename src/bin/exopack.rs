@@ -1,4 +1,4 @@
-// Copyright (c) 2026 The Cochran Block. All rights reserved.
+// Unlicense — public domain — cochranblock.org
 //! exopack CLI: live-demo, govdocs, SBOM. The binary IS the compliance artifact.
 
 use std::path::PathBuf;

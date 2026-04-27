@@ -1,4 +1,4 @@
-// Copyright (c) 2026 The Cochran Block. All rights reserved.
+// Unlicense — public domain — cochranblock.org
 //! perm_gate — test harness for tool permission gates.
 //! Verifies: open/guarded modes, exec tool rename, git mutation detection.
 //! Pure std — no runtime dep. Tests the permission contract.

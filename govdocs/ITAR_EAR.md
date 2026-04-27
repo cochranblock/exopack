@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2026 The Cochran Block. All rights reserved. -->
+<!-- Unlicense — public domain — cochranblock.org -->
 # Export Control Classification — exopack
 
 *ITAR/EAR analysis. 2026-03-27.*

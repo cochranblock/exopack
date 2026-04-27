@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2026 The Cochran Block. All rights reserved. -->
+<!-- Unlicense — public domain — cochranblock.org -->
 # User Story Analysis — exopack
 
 *Full end-to-end walkthrough from a new user's perspective. 2026-03-27.*

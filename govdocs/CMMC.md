@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2026 The Cochran Block. All rights reserved. -->
+<!-- Unlicense — public domain — cochranblock.org -->
 # CMMC Compliance Mapping — exopack
 
 *Cybersecurity Maturity Model Certification. 2026-03-27.*

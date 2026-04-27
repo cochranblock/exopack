@@ -1,4 +1,4 @@
-// Copyright (c) 2026 The Cochran Block. All rights reserved.
+// Unlicense — public domain — cochranblock.org
 //! Screenshot — capture, compare, diff, visual regression (Sim 4).
 //!
 //! - f70: out_dir — cache dir for screenshots

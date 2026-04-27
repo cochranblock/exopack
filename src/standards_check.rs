@@ -1,4 +1,4 @@
-// Copyright (c) 2026 The Cochran Block. All rights reserved.
+// Unlicense — public domain — cochranblock.org
 //! standards_check — Rust industry standards gate for the whole portfolio.
 //! 14 checks per project. Pass/fail table. The quality gate.
 

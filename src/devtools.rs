@@ -1,4 +1,4 @@
-// Copyright (c) 2026 The Cochran Block. All rights reserved.
+// Unlicense — public domain — cochranblock.org
 //! DevTools: headless browser console check via CDP. Catches JS errors, syntax errors, console.error.
 //! f75 = capture_screenshots. Real browser screenshots including WASM canvas.
 //!
@@ -13,7 +13,7 @@ use chromiumoxide::cdp::browser_protocol::page::CaptureScreenshotFormat;
 use chromiumoxide::page::ScreenshotParams;
 
 /// Build BrowserConfig. Uses fetcher to download Chromium when auto-detect fails.
-async fn browser_config() -> Result<chromiumoxide::BrowserConfig, String> {
+pub async fn browser_config() -> Result<chromiumoxide::BrowserConfig, String> {
     let builder = chromiumoxide::BrowserConfig::builder();
     match builder.build() {
         Ok(c) => return Ok(c),

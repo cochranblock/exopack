@@ -1,10 +1,10 @@
-# Copyright (c) 2026 The Cochran Block. All rights reserved.
+# Unlicense — public domain — cochranblock.org
 # exopack — testing capabilities to augment original binary into test binary.
 # Screenshot, video recording, interface creation, API mocking, TRIPLE SIMS.
 
 [package]
 name = "exopack"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 rust-version = "1.85"
 description = "Testing augmentation for Rust binaries: TRIPLE SIMS determinism, visual regression, screenshot capture, API mocking, demo record/replay"
@@ -24,6 +24,11 @@ required-features = ["triple_sims"]
 name = "exopack-harvest"
 path = "src/bin/harvest_cli.rs"
 required-features = ["harvest"]
+
+[[bin]]
+name = "wasm-smoke"
+path = "src/bin/wasm_smoke.rs"
+required-features = ["devtools"]
 
 [features]
 default = []

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 The Cochran Block. All rights reserved.
+// Unlicense — public domain — cochranblock.org
 //! Mock APIs on demand. wiremock wrapper.
 
 use wiremock::matchers::{method, path};

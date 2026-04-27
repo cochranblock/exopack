@@ -1,4 +1,4 @@
-<!-- Copyright (c) 2026 The Cochran Block. All rights reserved. -->
+<!-- Unlicense — public domain — cochranblock.org -->
 # exopack Compression Map (P13)
 
 All public symbols use compressed identifiers per Kova P13 protocol.

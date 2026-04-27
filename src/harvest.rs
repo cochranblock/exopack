@@ -1,4 +1,4 @@
-// Copyright (c) 2026 The Cochran Block. All rights reserved.
+// Unlicense — public domain — cochranblock.org
 //! Harvest: connect to running Chrome via CDP, automate Gemini sprite generation.
 //!
 //! Connects to Chrome on --remote-debugging-port=9222, navigates Gemini,

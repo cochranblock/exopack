@@ -1,4 +1,4 @@
-// Copyright (c) 2026 The Cochran Block. All rights reserved.
+// Unlicense — public domain — cochranblock.org
 //! exopack-harvest CLI — batch Gemini sprite generation via headless Chrome CDP.
 //!
 //! Usage:

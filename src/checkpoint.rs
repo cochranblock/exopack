@@ -1,4 +1,4 @@
-// Copyright (c) 2026 The Cochran Block. All rights reserved.
+// Unlicense — public domain — cochranblock.org
 //! checkpoint — test harness for checkpoint/undo patterns.
 //! Verifies the contract: snapshot before write, restore on undo.
 //! Pure std — no sled dependency. Tests the file-level behavior.

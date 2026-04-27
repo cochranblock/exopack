@@ -1,4 +1,4 @@
-// Copyright (c) 2026 The Cochran Block. All rights reserved.
+// Unlicense — public domain — cochranblock.org
 //! Verifies that the `video` module is properly cfg-gated.
 //!
 //! Before the fix, `pub mod video;` in lib.rs had no `#[cfg(feature = "video")]`
