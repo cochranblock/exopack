@@ -1,8 +1,27 @@
 // Unlicense — public domain — cochranblock.org
 //! Screen capture and recording — trait + xcap impl.
 //! Use for demo mode: screenshot before/after actions, optional video.
+//!
+//! Public API: trait [`VideoRecorder`], [`NoopRecorder`], [`capture_screenshot`],
+//! [`create_recorder`]. P13 aliases (`t64`, `t65`, `f88`, `f89`) retained.
 
 use std::path::Path;
+
+/// Capture a screenshot of the primary monitor; save as PNG under `out_dir`.
+/// Returns the saved path.
+pub fn capture_screenshot(out_dir: &Path, name: &str) -> Result<std::path::PathBuf, String> {
+    f88(out_dir, name)
+}
+
+/// Create a recorder for the current platform. Currently always returns a no-op.
+pub fn create_recorder() -> Box<dyn VideoRecorder> {
+    f89()
+}
+
+/// Canonical alias for [`t64`] — the video recorder trait.
+pub use self::t64 as VideoRecorder;
+/// Canonical alias for [`t65`] — a no-op recorder for unsupported platforms.
+pub use self::t65 as NoopRecorder;
 
 /// t64 = VideoRecorder. Video recorder trait. Implement for platform-specific capture.
 pub trait t64: Send + Sync {

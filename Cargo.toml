@@ -18,7 +18,10 @@ categories = ["development-tools::testing"]
 [[bin]]
 name = "exopack"
 path = "src/bin/exopack.rs"
-required-features = ["triple_sims"]
+# No required-features: the binary builds with no extras (you get
+# --help / --version / govdocs / --sbom). Subcommands gate on their own
+# features, so e.g. `exopack standards` needs `--features standards_check`.
+# Users who want the full CLI can install with `--features cli`.
 
 [[bin]]
 name = "exopack-harvest"
@@ -28,6 +31,11 @@ required-features = ["harvest"]
 [[bin]]
 name = "wasm-smoke"
 path = "src/bin/wasm_smoke.rs"
+required-features = ["devtools"]
+
+[[bin]]
+name = "pixel-forge-smoke"
+path = "src/bin/pixel_forge_smoke.rs"
 required-features = ["devtools"]
 
 [features]
@@ -49,14 +57,8 @@ triple_sims = []
 devtools = ["chromiumoxide", "chromiumoxide/fetcher", "chromiumoxide/rustls", "chromiumoxide/zip8", "dirs", "futures", "tokio", "serde_json"]
 # standards_check: Rust industry standards gate for the whole portfolio
 standards_check = []
-# checkpoint: test harness for checkpoint/undo file patterns
-checkpoint = []
-# compaction: test harness for context compaction patterns
-compaction = []
-# dual_mode: test harness for dual-mode inference routing
-dual_mode = []
-# perm_gate: test harness for tool permission gates
-perm_gate = []
+# cli: umbrella for the `exopack` binary's full subcommand set
+cli = ["triple_sims", "screenshot", "standards_check", "devtools"]
 # harvest: connect to running Chrome via CDP, automate Gemini sprite generation
 harvest = ["tokio", "futures", "serde_json", "image", "base64", "dirs", "reqwest", "tokio-tungstenite"]
 

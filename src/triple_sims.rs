@@ -1,10 +1,56 @@
 // Unlicense — public domain — cochranblock.org
-//! f60 = triple_sims — run test runner 3 times; all must pass.
-//! TRIPLE SIMS: 3 sequential passes, exit 0 only if all pass.
+//! TRIPLE SIMS — run test runner 3 times; all must pass. Sequential passes,
+//! exit 0 only if all 3 pass. Catches flaky tests, race conditions, and
+//! non-deterministic behavior that single-run CI misses.
+//!
+//! Public API: [`run`], [`run_cargo_test_n`], [`live_demo`], [`discover_test_bin`].
+//! P13-compressed aliases (`f60`, `f61`, `f62_live_demo`, `f63_discover_test_bin`)
+//! are retained for kova/cochranblock callers but hidden from docs.
 
 use std::path::Path;
 use std::process::Command;
 use std::time::Instant;
+
+// ── Canonical public API (v0.3+) ──────────────────────────────────
+// Stable names. Internally these forward to the P13-compressed
+// definitions below; both names compile to the same symbol.
+
+/// Run `run_once` 3 times sequentially. Returns true iff all 3 pass.
+/// The TRIPLE SIMS determinism gate — a single failure fails the whole run.
+pub async fn run<F, Fut>(run_once: F) -> bool
+where
+    F: Fn() -> Fut,
+    Fut: std::future::Future<Output = bool>,
+{
+    f60(run_once).await
+}
+
+/// Run `cargo test` N times in `project_dir`. Returns (all_passed, error_log).
+pub fn run_cargo_test_n(project_dir: &Path, n: u32) -> (bool, String) {
+    f61(project_dir, n)
+}
+
+/// Run `cargo test` N times in `project_dir` with extra cargo args.
+pub fn run_cargo_test_n_with_args(project_dir: &Path, n: u32, args: &[&str]) -> (bool, String) {
+    f61_with_args(project_dir, n, args)
+}
+
+/// Build and run a `*-test` binary with live stdout/stderr inherited.
+/// Sets `TEST_DEMO=1` for self-evaluation modes.
+pub fn live_demo(
+    project_dir: &Path,
+    bin_name: &str,
+    cargo_args: &[&str],
+) -> std::io::Result<std::process::ExitStatus> {
+    f62_live_demo(project_dir, bin_name, cargo_args)
+}
+
+/// Discover the first `*-test` binary name from a project's `Cargo.toml`.
+pub fn discover_test_bin(project_dir: &Path) -> Option<String> {
+    f63_discover_test_bin(project_dir)
+}
+
+// ── P13-compressed implementation (kept for compatibility) ────────
 
 /// f61 = run_cargo_test_n. Runs `cargo test` N times in project_dir. Returns (ok, stderr).
 /// For kova and other orchestrators. N=3 = TRIPLE SIMS.

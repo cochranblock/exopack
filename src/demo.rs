@@ -1,9 +1,22 @@
 // Unlicense — public domain — cochranblock.org
 //! Demo mode: action script recording for UI testing.
 //! Record user actions + function invocations; replay to iterate Kova dev cycles.
+//!
+//! Public API: [`DemoAction`], [`DemoRecord`], [`demo_dir`].
+//! P13 aliases (`t66`, `t67`, `f90`) retained.
 
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+
+/// Canonical alias for [`t66`] — a single recorded action.
+pub use self::t66 as DemoAction;
+/// Canonical alias for [`t67`] — a demo recording session.
+pub use self::t67 as DemoRecord;
+
+/// Demo dir: `$KOVA_DEMO_DIR` or `~/.kova/demos`.
+pub fn demo_dir() -> std::path::PathBuf {
+    f90()
+}
 
 /// t66 = DemoAction. Single recorded action. Web: click, input, api_call. Egui: click, key, intent.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -44,7 +57,7 @@ impl t67 {
             name: name.into(),
             source: source.to_string(),
             actions: Vec::new(),
-            started_at: Some(chrono_now()),
+            started_at: Some(unix_ts_string()),
         }
     }
 
@@ -67,7 +80,7 @@ impl t67 {
     }
 }
 
-fn chrono_now() -> String {
+fn unix_ts_string() -> String {
     use std::time::{SystemTime, UNIX_EPOCH};
     let t = SystemTime::now()
         .duration_since(UNIX_EPOCH)

@@ -1,5 +1,14 @@
 // Unlicense — public domain — cochranblock.org
 //! exopack — testing augmentation: screenshot, video, interfaces, API mocks, triple sims, demo, baked_demo.
+//!
+//! ## Quick links (canonical names)
+//! - TRIPLE SIMS: [`triple_sims::run`]
+//! - Visual regression: [`screenshot::visual_regression`]
+//! - HTTP test harness: [`interface::bind_random`], [`interface::http_client`]
+//! - Mock server: [`mock::start_server`]
+//!
+//! P13-compressed names (`f60`, `t66`, …) remain as aliases for kova-internal
+//! callers but are hidden from generated docs.
 
 #![forbid(unsafe_code)]
 // P13 compressed identifiers (t60, f61, s80) trigger naming and unused warnings
@@ -32,17 +41,7 @@ pub mod baked_demo;
 #[cfg(feature = "standards_check")]
 pub mod standards_check;
 
-#[cfg(feature = "checkpoint")]
-pub mod checkpoint;
-
-#[cfg(feature = "compaction")]
-pub mod compaction;
-
-#[cfg(feature = "dual_mode")]
-pub mod dual_mode;
-
-#[cfg(feature = "perm_gate")]
-pub mod perm_gate;
-
 #[cfg(feature = "harvest")]
 pub mod harvest;
+
+pub mod guard;

@@ -20,13 +20,17 @@ fn print_usage() {
     eprintln!("  --count <n>       Sheets per class (each sheet = 30 sprites)");
     eprintln!("  --output <dir>    Output directory [default: for_human_review]");
     eprintln!("  --port <n>        Chrome debug port [default: 9222]");
-    eprintln!("  --launch          Auto-launch headless Chrome with your profile");
+    eprintln!("  --launch          Auto-launch headless Chrome with a fresh empty profile");
     eprintln!("  --style <ref>     Art style reference [default: Dungeon Crawl Stone Soup]");
+    eprintln!();
+    eprintln!("Environment:");
+    eprintln!("  EXOPACK_CHROME_BIN  Path to chrome/chromium binary (overrides platform default)");
     eprintln!();
     eprintln!("Prerequisites:");
     eprintln!("  Chrome running with: --remote-debugging-port=9222");
     eprintln!("  Logged into gemini.google.com");
-    eprintln!("  Or use --launch to auto-start headless Chrome with your cookies");
+    eprintln!("  Or use --launch — note this opens a BLANK profile; you must sign in manually");
+    eprintln!("  in the headless window. The launch helper does not touch your real Chrome.");
 }
 
 #[tokio::main]

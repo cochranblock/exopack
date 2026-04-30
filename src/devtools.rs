@@ -12,9 +12,34 @@ use std::time::Duration;
 use chromiumoxide::cdp::browser_protocol::page::CaptureScreenshotFormat;
 use chromiumoxide::page::ScreenshotParams;
 
+/// Per-invocation user-data-dir. Each call returns a unique path so concurrent
+/// browser launches don't collide on chromiumoxide's default SingletonLock.
+fn unique_user_data_dir() -> std::path::PathBuf {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::time::{SystemTime, UNIX_EPOCH};
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    let n = COUNTER.fetch_add(1, Ordering::Relaxed);
+    std::env::temp_dir().join(format!(
+        "exopack-chromium-{}-{}-{}",
+        std::process::id(),
+        nanos,
+        n
+    ))
+}
+
 /// Build BrowserConfig. Uses fetcher to download Chromium when auto-detect fails.
+/// Each call binds a unique user-data-dir to avoid `SingletonLock` collisions.
 pub async fn browser_config() -> Result<chromiumoxide::BrowserConfig, String> {
-    let builder = chromiumoxide::BrowserConfig::builder();
+    let user_data = unique_user_data_dir();
+    if let Err(e) = std::fs::create_dir_all(&user_data) {
+        return Err(format!("mkdir user_data {}: {}", user_data.display(), e));
+    }
+
+    let builder = chromiumoxide::BrowserConfig::builder().user_data_dir(&user_data);
     match builder.build() {
         Ok(c) => return Ok(c),
         Err(e) if e.contains("Could not auto detect") => {}
@@ -36,6 +61,7 @@ pub async fn browser_config() -> Result<chromiumoxide::BrowserConfig, String> {
         .map_err(|e| format!("fetcher: {}", e))?;
     chromiumoxide::BrowserConfig::builder()
         .chrome_executable(info.executable_path)
+        .user_data_dir(&user_data)
         .build()
         .map_err(|e| format!("devtools config: {}", e))
 }

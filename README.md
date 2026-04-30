@@ -16,6 +16,94 @@ Testing augmentation for Rust binaries: screenshot capture, video recording, int
 
 Used by cochranblock, kova, approuter, oakilydokily, whyyoulying, wowasticker for test binaries (`*-test`).
 
+## Quickstart
+
+### 1. Add the dep
+
+```toml
+# Cargo.toml in your application crate
+[dependencies]
+exopack = { version = "0.3", features = ["triple_sims", "interface"] }
+
+# Add a test binary that imports your library and runs through TRIPLE SIMS:
+[[bin]]
+name = "myapp-test"
+path = "src/bin/myapp-test.rs"
+required-features = ["tests"]
+
+[features]
+tests = []  # gate any test-only deps/code on this feature
+```
+
+### 2. Write the minimal `*-test` binary (≈10 lines)
+
+```rust
+// src/bin/myapp-test.rs
+
+// Compile-time guard: refuse to build the test binary in release profile —
+// a release+tests build would ship test internals as a production artifact.
+exopack::deny_release_with_tests!();
+
+#[tokio::main]
+async fn main() {
+    let ok = exopack::triple_sims::run(|| async {
+        // Your actual smoke test: spin up the server, hit a route, assert.
+        myapp::tests::run_smoke().await
+    }).await;
+    std::process::exit(if ok { 0 } else { 1 });
+}
+```
+
+### 3. CI: GitHub Actions
+
+```yaml
+# .github/workflows/test.yml
+name: test
+on: [push, pull_request]
+
+jobs:
+  triple-sims:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: TRIPLE SIMS gate
+        run: cargo run --bin myapp-test --features tests
+```
+
+### 4. (Optional) Visual regression in CI
+
+```rust
+// inside the test runner closure
+let report = exopack::screenshot::visual_regression(
+    "http://localhost:8080", "myapp",
+    &[("home", "/"), ("about", "/about")], 10, 1.0,
+).await;
+report.print_summary();
+report.all_passed
+```
+
+First run **stages** baselines into `~/.cache/screenshots/{os}/myapp/baselines_pending/` —
+nothing is trusted until a human runs `exopack baselines accept myapp` (or calls
+`screenshot::accept_pending_baselines`). This is deliberate; auto-promoting on first
+run lets an attacker poison your baselines.
+
+### CLI
+
+```bash
+# Build the binary with the full subcommand set
+cargo install exopack --features cli
+
+exopack live-demo ./myapp --features tests   # build+run *-test with live output
+exopack standards . --json                   # 14-point standards gate (JSON or table)
+exopack baselines accept myapp               # promote pending baselines to trusted
+exopack screenshot https://example.com out.png   # one-shot capture (devtools)
+exopack compare a.png b.png                  # pixel diff, exit 0 == match
+exopack govdocs sbom                         # baked federal compliance docs
+exopack --sbom > exopack.spdx                # machine SPDX
+```
+
 ## Wire / Architecture
 
 ```mermaid

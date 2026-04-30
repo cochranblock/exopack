@@ -5,6 +5,86 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+/// Resolve the `src/` directories that belong to `project_dir`.
+///
+/// - Non-workspace: returns `[project_dir/src]` if it exists, else `[]`.
+/// - Workspace (Cargo.toml has `[workspace]`): parses `members = [...]`,
+///   expanding simple glob suffixes (`crates/*`) by enumerating subdirs,
+///   and returns each member's `src/` dir that exists. Falls back to a
+///   filesystem scan when `members =` is unparseable, so a workspace whose
+///   inner crate name differs from the parent dir name still gets covered.
+fn resolve_src_dirs(project_dir: &Path) -> Vec<PathBuf> {
+    let root_toml = project_dir.join("Cargo.toml");
+    let content = std::fs::read_to_string(&root_toml).unwrap_or_default();
+
+    if !content.contains("[workspace]") {
+        let s = project_dir.join("src");
+        return if s.exists() { vec![s] } else { Vec::new() };
+    }
+
+    // Workspace path. First try parsing `members = [ ... ]` (single-line or
+    // multi-line). Anything we can't parse cleanly falls through to a
+    // shallow filesystem scan.
+    let mut out: Vec<PathBuf> = Vec::new();
+    if let Some(members) = parse_workspace_members(&content) {
+        for m in members {
+            if m.ends_with("/*") || m == "*" {
+                let parent = project_dir.join(m.trim_end_matches("/*").trim_end_matches('*'));
+                if let Ok(read) = std::fs::read_dir(&parent) {
+                    for entry in read.flatten() {
+                        let s = entry.path().join("src");
+                        if s.exists() {
+                            out.push(s);
+                        }
+                    }
+                }
+            } else {
+                let s = project_dir.join(&m).join("src");
+                if s.exists() {
+                    out.push(s);
+                }
+            }
+        }
+    }
+    if out.is_empty() {
+        // Fallback: any first-level subdir that has Cargo.toml + src/.
+        if let Ok(read) = std::fs::read_dir(project_dir) {
+            for entry in read.flatten() {
+                let p = entry.path();
+                if p.join("Cargo.toml").exists() {
+                    let s = p.join("src");
+                    if s.exists() {
+                        out.push(s);
+                    }
+                }
+            }
+        }
+    }
+    out
+}
+
+/// Cheap-and-correct extractor for `members = [...]`. Handles single-line and
+/// multi-line forms; ignores comments. Returns `None` if no `members =` key.
+fn parse_workspace_members(toml: &str) -> Option<Vec<String>> {
+    let key_pos = toml.find("members")?;
+    let after = &toml[key_pos..];
+    let eq_pos = after.find('=')?;
+    let after_eq = &after[eq_pos + 1..];
+    let lb = after_eq.find('[')?;
+    let rb = after_eq[lb..].find(']')?;
+    let inside = &after_eq[lb + 1..lb + rb];
+
+    let mut members = Vec::new();
+    for token in inside.split(',') {
+        let t = token.trim().trim_matches('"').trim_matches('\'').trim();
+        if t.is_empty() || t.starts_with('#') {
+            continue;
+        }
+        members.push(t.to_string());
+    }
+    if members.is_empty() { None } else { Some(members) }
+}
+
 /// t70: Result of a single standard check
 #[derive(Debug, Clone)]
 pub struct t70 {
@@ -133,13 +213,13 @@ pub fn f101(project_dir: &Path) -> t71 {
         f104(project_dir),              // audit
         f105(project_dir),              // deny
         f106(&cargo_content),           // MSRV
-        f107(&src_dir),                 // unsafe (check inner src/)
-        f108(&src_dir),                 // module docs (check inner src/)
+        f107(project_dir),              // unsafe (workspace-aware)
+        f108(&src_dir),                 // module docs (legacy: inner src/)
         f109(project_dir),              // changelog
         f110(project_dir),              // license file
         f111(&src_dir, &cargo_content), // test binary (P16)
-        f112(&src_dir),                 // allow(unused) (check inner src/)
-        f113(&src_dir),                 // error handling (check inner src/)
+        f112(project_dir),              // allow(unused) (workspace-aware)
+        f113(project_dir),              // error handling (workspace-aware)
         f114(project_dir),              // secrets (check root for .env)
         f115(&cargo_content),           // Cargo.toml metadata
     ];
@@ -258,48 +338,63 @@ fn f106(cargo_content: &str) -> t70 {
     }
 }
 
-/// f107: #![forbid(unsafe_code)] or justified unsafe
-fn f107(dir: &Path) -> t70 {
-    let src_dir = dir.join("src");
-    if !src_dir.exists() {
+/// f107: #![forbid(unsafe_code)] or justified unsafe.
+/// Workspace-aware: every member crate must satisfy the rule.
+fn f107(project_dir: &Path) -> t70 {
+    let src_dirs = resolve_src_dirs(project_dir);
+    if src_dirs.is_empty() {
         return t70::fail("unsafe", "no src/ directory");
     }
 
-    // Check lib.rs and main.rs for forbid(unsafe_code)
-    let lib_rs = src_dir.join("lib.rs");
-    let main_rs = src_dir.join("main.rs");
-    let has_forbid = [&lib_rs, &main_rs].iter().any(|p| {
-        std::fs::read_to_string(p)
-            .map(|s| s.contains("forbid(unsafe_code)"))
-            .unwrap_or(false)
-    });
-
-    if has_forbid {
-        return t70::pass("unsafe", "#![forbid(unsafe_code)]");
-    }
-
-    // Count actual unsafe blocks/fns in source (not string literals or comments)
-    let mut unsafe_count = 0u32;
-    let src_dir2 = dir.join("src");
-    if src_dir2.exists() {
-        visit_rs_files(&src_dir2, &mut |content, _path| {
+    let mut total_unsafe = 0u32;
+    let mut missing_forbid: Vec<String> = Vec::new();
+    for src_dir in &src_dirs {
+        let lib_rs = src_dir.join("lib.rs");
+        let main_rs = src_dir.join("main.rs");
+        let has_forbid = [&lib_rs, &main_rs].iter().any(|p| {
+            std::fs::read_to_string(p)
+                .map(|s| s.contains("forbid(unsafe_code)"))
+                .unwrap_or(false)
+        });
+        if has_forbid {
+            continue;
+        }
+        let mut local_unsafe = 0u32;
+        visit_rs_files(src_dir, &mut |content, _path| {
             for line in content.lines() {
                 let t = line.trim();
                 if t.starts_with("//") || t.contains(".contains(") {
                     continue;
                 }
                 if t.contains("unsafe {") || t.contains("unsafe fn ") {
-                    unsafe_count += 1;
+                    local_unsafe += 1;
                 }
             }
         });
+        total_unsafe += local_unsafe;
+        let label = src_dir
+            .parent()
+            .and_then(|p| p.file_name())
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_else(|| "?".to_string());
+        if local_unsafe == 0 {
+            missing_forbid.push(format!("{}(no forbid)", label));
+        } else {
+            missing_forbid.push(format!("{}({} unsafe)", label, local_unsafe));
+        }
     }
-    if unsafe_count == 0 {
-        t70::fail("unsafe", "no unsafe but missing #![forbid(unsafe_code)]")
+
+    if missing_forbid.is_empty() {
+        t70::pass("unsafe", "#![forbid(unsafe_code)] (all members)")
+    } else if total_unsafe == 0 {
+        t70::fail(
+            "unsafe",
+            format!("missing #![forbid(unsafe_code)]: {}", missing_forbid.join(", ")),
+        )
     } else {
         t70::fail(
             "unsafe",
-            format!("{} unsafe usages, no forbid", unsafe_count),
+            format!("{} unsafe usages: {}", total_unsafe, missing_forbid.join(", ")),
         )
     }
 }
@@ -360,30 +455,31 @@ fn f111(_dir: &Path, cargo_content: &str) -> t70 {
     }
 }
 
-/// f112: No #[allow(unused)] without justification
-fn f112(dir: &Path) -> t70 {
-    let src_dir = dir.join("src");
-    if !src_dir.exists() {
+/// f112: No `#[allow(unused)]` without justification (workspace-aware).
+fn f112(project_dir: &Path) -> t70 {
+    let src_dirs = resolve_src_dirs(project_dir);
+    if src_dirs.is_empty() {
         return t70::fail("allow_unused", "no src/ directory");
     }
 
     let mut unjustified = 0u32;
-    visit_rs_files(&src_dir, &mut |content, _path| {
-        for (i, line) in content.lines().enumerate() {
-            let trimmed = line.trim();
-            if trimmed.contains("#[allow(unused") || trimmed.contains("#![allow(unused") {
-                // Check if previous line has a justification comment
-                if i > 0 {
-                    let prev = content.lines().nth(i - 1).unwrap_or("");
-                    if !prev.trim().starts_with("//") {
+    for src_dir in &src_dirs {
+        visit_rs_files(src_dir, &mut |content, _path| {
+            for (i, line) in content.lines().enumerate() {
+                let trimmed = line.trim();
+                if trimmed.contains("#[allow(unused") || trimmed.contains("#![allow(unused") {
+                    if i > 0 {
+                        let prev = content.lines().nth(i - 1).unwrap_or("");
+                        if !prev.trim().starts_with("//") {
+                            unjustified += 1;
+                        }
+                    } else {
                         unjustified += 1;
                     }
-                } else {
-                    unjustified += 1;
                 }
             }
-        }
-    });
+        });
+    }
 
     if unjustified == 0 {
         t70::pass("allow_unused", "no unjustified #[allow(unused)]")
@@ -395,15 +491,16 @@ fn f112(dir: &Path) -> t70 {
     }
 }
 
-/// f113: Error handling — no unwrap() in library code (lib.rs tree)
-fn f113(dir: &Path) -> t70 {
-    let src_dir = dir.join("src");
-    if !src_dir.exists() {
+/// f113: Error handling — no `unwrap()` in library code (workspace-aware).
+fn f113(project_dir: &Path) -> t70 {
+    let src_dirs = resolve_src_dirs(project_dir);
+    if src_dirs.is_empty() {
         return t70::fail("error_handling", "no src/ directory");
     }
 
     let mut unwrap_count = 0u32;
-    visit_rs_files(&src_dir, &mut |content, path| {
+    for src_dir in &src_dirs {
+    visit_rs_files(src_dir, &mut |content, path| {
         // Skip test modules and bin/
         let path_str = path.to_string_lossy();
         if path_str.contains("/bin/") || path_str.contains("/tests/") {
@@ -432,6 +529,7 @@ fn f113(dir: &Path) -> t70 {
             }
         }
     });
+    }
 
     if unwrap_count == 0 {
         t70::pass("error_handling", "no unwrap() in library code")
@@ -716,6 +814,48 @@ name = "foo"
         fs::write(dir.join("src").join("lib.rs"), "pub fn foo() {}\n").unwrap();
         let result = f107(&dir);
         assert!(!result.s81, "should fail without forbid");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn workspace_with_member_named_differently_is_inspected() {
+        // Regression for backlog #5: a workspace whose member crate name
+        // differs from the parent dir (e.g., rogue-repo/rogue-server) used
+        // to return "no src/" because the resolver only matched parent name.
+        let dir = std::env::temp_dir()
+            .join(format!("exopack_ws_named_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(
+            dir.join("Cargo.toml"),
+            r#"
+[workspace]
+members = ["server-crate"]
+resolver = "2"
+"#,
+        )
+        .unwrap();
+        let inner = dir.join("server-crate");
+        fs::create_dir_all(inner.join("src")).unwrap();
+        fs::write(
+            inner.join("Cargo.toml"),
+            "[package]\nname = \"server-crate\"\nversion = \"0.1.0\"\n",
+        )
+        .unwrap();
+        fs::write(
+            inner.join("src").join("lib.rs"),
+            "#![forbid(unsafe_code)]\npub fn ok() {}\n",
+        )
+        .unwrap();
+
+        let result = f107(&dir);
+        assert!(
+            result.s81,
+            "workspace member should pass forbid check; got: {}",
+            result.s82
+        );
+        // f112 and f113 should also see the member src dir (no panics, real result).
+        assert!(f112(&dir).s82.contains("no unjustified") || f112(&dir).s81);
         let _ = fs::remove_dir_all(&dir);
     }
 

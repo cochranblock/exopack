@@ -1,8 +1,42 @@
 // Unlicense — public domain — cochranblock.org
 //! Mock APIs on demand. wiremock wrapper.
+//!
+//! Public API: [`start_server`], [`mount_get`], [`mount_get_json`],
+//! [`mount_post`], [`mount_post_json`], [`mount_status`].
+//! P13 aliases (`f82`–`f87`) retained.
 
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
+
+/// Start a mock HTTP server on a random port. Returns `(server, base_uri)`.
+pub async fn start_server() -> (MockServer, String) {
+    f82().await
+}
+
+/// Mount a GET handler returning 200 + a text body.
+pub async fn mount_get(server: &MockServer, path_pattern: &str, body: &str) {
+    f83(server, path_pattern, body).await
+}
+
+/// Mount a GET handler returning 200 + a JSON body.
+pub async fn mount_get_json(server: &MockServer, path_pattern: &str, json: serde_json::Value) {
+    f84(server, path_pattern, json).await
+}
+
+/// Mount a POST handler returning 200 + a text body.
+pub async fn mount_post(server: &MockServer, path_pattern: &str, body: &str) {
+    f85(server, path_pattern, body).await
+}
+
+/// Mount a POST handler returning 200 + a JSON body.
+pub async fn mount_post_json(server: &MockServer, path_pattern: &str, json: serde_json::Value) {
+    f86(server, path_pattern, json).await
+}
+
+/// Mount a handler for any method returning a custom status code + body.
+pub async fn mount_status(server: &MockServer, path_pattern: &str, status: u16, body: &str) {
+    f87(server, path_pattern, status, body).await
+}
 
 /// f82 = start_mock_server. Start a mock HTTP server on a random port. Returns (server, base_uri).
 pub async fn f82() -> (MockServer, String) {

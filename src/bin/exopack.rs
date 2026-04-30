@@ -1,6 +1,7 @@
 // Unlicense — public domain — cochranblock.org
 //! exopack CLI: live-demo, govdocs, SBOM. The binary IS the compliance artifact.
 
+#[cfg(feature = "triple_sims")]
 use std::path::PathBuf;
 use std::process::exit;
 
@@ -31,13 +32,21 @@ fn print_usage() {
     eprintln!();
     eprintln!("Usage:");
     eprintln!("  exopack live-demo <project_dir> [bin_name] [cargo_args...]");
+    eprintln!("  exopack standards <project_dir> [--json]");
+    eprintln!("  exopack baselines accept <project>");
+    eprintln!("  exopack screenshot <url> <out.png>");
+    eprintln!("  exopack compare <a.png> <b.png> [--tolerance N] [--threshold P]");
     eprintln!("  exopack govdocs [topic]");
     eprintln!("  exopack --sbom");
     eprintln!("  exopack --help | -h");
     eprintln!("  exopack --version | -V");
     eprintln!();
     eprintln!("Commands:");
-    eprintln!("  live-demo    Build and run a *-test binary with live output");
+    eprintln!("  live-demo    Build and run a *-test binary with live output (feature: triple_sims)");
+    eprintln!("  standards    Run the 14-point Rust standards gate against a project (feature: standards_check)");
+    eprintln!("  baselines    Manage Sim 4 baselines — `accept` promotes pending → trusted (feature: screenshot)");
+    eprintln!("  screenshot   Capture a single page via headless Chromium (features: screenshot,devtools)");
+    eprintln!("  compare      Pixel-diff two PNGs, exit nonzero on mismatch (feature: screenshot)");
     eprintln!("  govdocs      Print federal compliance docs (baked into binary)");
     eprintln!();
     eprintln!("Govdocs topics:");
@@ -47,8 +56,14 @@ fn print_usage() {
     eprintln!("Flags:");
     eprintln!("  --sbom       Machine-readable SPDX SBOM (for federal scanners)");
     eprintln!();
+    eprintln!("Build with `--features cli` for the full subcommand set, or pick the");
+    eprintln!("specific feature listed beside each command above.");
+    eprintln!();
     eprintln!("Examples:");
     eprintln!("  exopack live-demo ./oakilydokily --features tests");
+    eprintln!("  exopack standards . --json");
+    eprintln!("  exopack baselines accept myapp");
+    eprintln!("  exopack compare current.png baseline.png");
     eprintln!("  exopack govdocs sbom");
     eprintln!("  exopack --sbom > exopack.spdx");
 }
@@ -79,11 +94,225 @@ fn main() {
             exit(0);
         }
         "live-demo" => cmd_live_demo(&args[2..]),
+        "standards" => cmd_standards(&args[2..]),
+        "baselines" => cmd_baselines(&args[2..]),
+        "screenshot" => cmd_screenshot(&args[2..]),
+        "compare" => cmd_compare(&args[2..]),
         _ => {
             eprintln!("Unknown command: {}. Run 'exopack --help' for usage.", sub);
             exit(1);
         }
     }
+}
+
+// --- standards subcommand (feature: standards_check) ---
+
+#[cfg(feature = "standards_check")]
+fn cmd_standards(args: &[String]) {
+    if args.is_empty() {
+        eprintln!("standards requires <project_dir>");
+        eprintln!("  exopack standards <project_dir> [--json]");
+        exit(1);
+    }
+    let project_dir = PathBuf::from(&args[0]);
+    let json_output = args.iter().any(|a| a == "--json");
+
+    let report = exopack::standards_check::f101(&project_dir);
+    let failed = report.failed();
+
+    if json_output {
+        // Hand-rolled JSON to avoid a serde_json dep at the binary level.
+        print!("{{");
+        print!("\"project\":{},", json_str(&report.s83));
+        print!("\"path\":{},", json_str(&report.s84.display().to_string()));
+        print!("\"total\":{},", report.total());
+        print!("\"passed\":{},", report.passed());
+        print!("\"failed\":{},", report.failed());
+        print!("\"checks\":[");
+        for (i, c) in report.s85.iter().enumerate() {
+            if i > 0 { print!(","); }
+            print!(
+                "{{\"name\":{},\"passed\":{},\"detail\":{}}}",
+                json_str(c.s80),
+                c.s81,
+                json_str(&c.s82)
+            );
+        }
+        println!("]}}");
+    } else {
+        println!("STANDARDS CHECK: {} ({}/{} passed)", report.s83, report.passed(), report.total());
+        for c in &report.s85 {
+            let icon = if c.s81 { "PASS" } else { "FAIL" };
+            println!("  [{}] {:<18} {}", icon, c.s80, c.s82);
+        }
+    }
+    exit(if failed == 0 { 0 } else { 1 });
+}
+
+#[cfg(not(feature = "standards_check"))]
+fn cmd_standards(_args: &[String]) {
+    eprintln!("`standards` requires building with --features standards_check (or --features cli).");
+    exit(2);
+}
+
+#[cfg(feature = "standards_check")]
+fn json_str(s: &str) -> String {
+    // Minimal JSON string escape — enough for project names, paths, and check details.
+    let mut out = String::with_capacity(s.len() + 2);
+    out.push('"');
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if (c as u32) < 0x20 => out.push_str(&format!("\\u{:04x}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
+}
+
+// --- baselines subcommand (feature: screenshot) ---
+
+#[cfg(feature = "screenshot")]
+fn cmd_baselines(args: &[String]) {
+    let usage = || {
+        eprintln!("baselines accept <project>");
+        eprintln!("  Promotes baselines_pending/* to baselines/* for the named project.");
+    };
+    if args.len() < 2 || args[0] != "accept" {
+        usage();
+        exit(1);
+    }
+    let project = &args[1];
+    match exopack::screenshot::accept_pending_baselines(project) {
+        Ok(0) => {
+            eprintln!("baselines accept: nothing pending for project {}", project);
+            exit(0);
+        }
+        Ok(n) => {
+            println!("baselines accept: promoted {} file(s)", n);
+            exit(0);
+        }
+        Err(e) => {
+            eprintln!("baselines accept: {}", e);
+            exit(1);
+        }
+    }
+}
+
+#[cfg(not(feature = "screenshot"))]
+fn cmd_baselines(_args: &[String]) {
+    eprintln!("`baselines` requires building with --features screenshot.");
+    exit(2);
+}
+
+// --- screenshot subcommand (features: screenshot + devtools for real captures) ---
+
+#[cfg(all(feature = "screenshot", feature = "devtools"))]
+fn cmd_screenshot(args: &[String]) {
+    if args.len() < 2 {
+        eprintln!("screenshot <url> <out.png>");
+        exit(1);
+    }
+    let url = &args[0];
+    let out = std::path::PathBuf::from(&args[1]);
+
+    // Minimal block_on for the async devtools call.
+    let rt = match tokio::runtime::Builder::new_current_thread().enable_all().build() {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!("screenshot: tokio runtime: {}", e);
+            exit(1);
+        }
+    };
+    let parent = out.parent().unwrap_or(std::path::Path::new("."));
+    if let Err(e) = std::fs::create_dir_all(parent) {
+        eprintln!("screenshot: mkdir {}: {}", parent.display(), e);
+        exit(1);
+    }
+    let file_stem = out
+        .file_stem()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "screenshot".to_string());
+
+    let result = rt.block_on(async {
+        exopack::devtools::f75(url, &[(file_stem.as_str(), "")], parent).await
+    });
+    match result {
+        Ok(true) => {
+            println!("screenshot: saved {}", out.display());
+            exit(0);
+        }
+        Ok(false) => {
+            eprintln!("screenshot: capture reported failure");
+            exit(1);
+        }
+        Err(e) => {
+            eprintln!("screenshot: {}", e);
+            exit(1);
+        }
+    }
+}
+
+#[cfg(not(all(feature = "screenshot", feature = "devtools")))]
+fn cmd_screenshot(_args: &[String]) {
+    eprintln!("`screenshot` requires building with --features \"screenshot devtools\".");
+    exit(2);
+}
+
+// --- compare subcommand (feature: screenshot) ---
+
+#[cfg(feature = "screenshot")]
+fn cmd_compare(args: &[String]) {
+    if args.len() < 2 {
+        eprintln!("compare <a.png> <b.png> [--tolerance N] [--threshold P]");
+        exit(1);
+    }
+    let a = std::path::PathBuf::from(&args[0]);
+    let b = std::path::PathBuf::from(&args[1]);
+    let mut tolerance: u8 = 10;
+    let mut threshold: f64 = 1.0;
+    let mut i = 2;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--tolerance" => {
+                i += 1;
+                if let Some(v) = args.get(i).and_then(|s| s.parse().ok()) { tolerance = v; }
+            }
+            "--threshold" => {
+                i += 1;
+                if let Some(v) = args.get(i).and_then(|s| s.parse().ok()) { threshold = v; }
+            }
+            other => {
+                eprintln!("compare: unknown arg {}", other);
+                exit(1);
+            }
+        }
+        i += 1;
+    }
+    match exopack::screenshot::compare_screenshots(&a, &b, tolerance, threshold) {
+        Ok(r) => {
+            println!(
+                "compare: {} vs {} — {:.2}% diff ({}/{} pixels)",
+                a.display(), b.display(), r.diff_pct, r.diff_pixels, r.total_pixels
+            );
+            exit(if r.matches { 0 } else { 1 });
+        }
+        Err(e) => {
+            eprintln!("compare: {}", e);
+            exit(1);
+        }
+    }
+}
+
+#[cfg(not(feature = "screenshot"))]
+fn cmd_compare(_args: &[String]) {
+    eprintln!("`compare` requires building with --features screenshot.");
+    exit(2);
 }
 
 // --- govdocs subcommand ---
@@ -264,8 +493,9 @@ fn print_spdx_sbom() {
     }
 }
 
-// --- live-demo subcommand ---
+// --- live-demo subcommand (feature: triple_sims) ---
 
+#[cfg(feature = "triple_sims")]
 fn cmd_live_demo(args: &[String]) {
     if args.is_empty() {
         eprintln!("live-demo requires <project_dir>");
@@ -287,7 +517,7 @@ fn cmd_live_demo(args: &[String]) {
                 args[2..].iter().map(|s| s.as_str()).collect(),
             )
         } else {
-            match exopack::triple_sims::f63_discover_test_bin(&project_dir) {
+            match exopack::triple_sims::discover_test_bin(&project_dir) {
                 Some(b) => (b, args[1..].iter().map(|s| s.as_str()).collect()),
                 None => {
                     eprintln!(
@@ -308,11 +538,17 @@ fn cmd_live_demo(args: &[String]) {
         bin_name,
         project_dir.display()
     );
-    match exopack::triple_sims::f62_live_demo(&project_dir, bin_name.as_str(), &cargo_args) {
+    match exopack::triple_sims::live_demo(&project_dir, bin_name.as_str(), &cargo_args) {
         Ok(status) => exit(status.code().unwrap_or(1)),
         Err(e) => {
             eprintln!("exopack live-demo: {}", e);
             exit(1);
         }
     }
+}
+
+#[cfg(not(feature = "triple_sims"))]
+fn cmd_live_demo(_args: &[String]) {
+    eprintln!("`live-demo` requires building with --features triple_sims.");
+    exit(2);
 }

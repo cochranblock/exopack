@@ -133,7 +133,7 @@ pub async fn click_send(ws_url: &str) -> Result<(), String> {
 
 /// Wait for image generation to complete. Polls every 3s, max 90s.
 pub async fn wait_for_image(ws_url: &str) -> Result<(), String> {
-    for i in 0..30 {
+    for _ in 0..30 {
         let js = r#"(() => {
             let creating = document.body.innerText.includes('Creating your image');
             let imgs = [...document.querySelectorAll('img')].filter(i => i.src.startsWith('blob:') && i.naturalWidth > 100);
@@ -227,46 +227,67 @@ pub async fn harvest_batch(
     Ok(all)
 }
 
-/// Launch Chrome with remote debugging enabled, using a copy of the current profile.
-/// Kills existing Chrome, copies profile, relaunches with --remote-debugging-port.
-/// Returns the debug port URL.
-pub async fn launch_debug_chrome(port: u16) -> Result<String, String> {
-    // Kill existing Chrome
-    let _ = std::process::Command::new("pkill")
-        .args(["-f", "Google Chrome"])
-        .output();
-    tokio::time::sleep(Duration::from_secs(2)).await;
-
-    // Copy profile to temp dir for debug session
-    let src = dirs::home_dir()
-        .ok_or("no home dir")?
-        .join("Library/Application Support/Google/Chrome");
-    let dst = std::env::temp_dir().join("chrome-debug");
-    let _ = std::fs::remove_dir_all(&dst);
-
-    // Copy Default profile + Local State (cookies + session)
-    let dst_default = dst.join("Default");
-    std::fs::create_dir_all(&dst_default).map_err(|e| format!("mkdir: {}", e))?;
-
-    // Copy key files, not the whole profile (saves time)
-    for name in ["Cookies", "Login Data", "Web Data", "Preferences", "Secure Preferences", "Local State"] {
-        let from = if name == "Local State" { src.join(name) } else { src.join("Default").join(name) };
-        let to = if name == "Local State" { dst.join(name) } else { dst_default.join(name) };
-        let _ = std::fs::copy(&from, &to); // ignore missing files
+/// Resolve the Chrome binary path. Honors `EXOPACK_CHROME_BIN` env var first;
+/// otherwise picks a per-platform default. Returns the candidate path even if
+/// it does not exist on disk — caller surfaces the spawn error.
+pub fn default_chrome_bin() -> std::path::PathBuf {
+    if let Ok(v) = std::env::var("EXOPACK_CHROME_BIN") {
+        return std::path::PathBuf::from(v);
     }
+    if cfg!(target_os = "macos") {
+        std::path::PathBuf::from("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+    } else if cfg!(target_os = "windows") {
+        std::path::PathBuf::from(r"C:\Program Files\Google\Chrome\Application\chrome.exe")
+    } else {
+        // Linux & other unix — try `google-chrome`, fall back to `chromium`.
+        for cand in ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser"] {
+            if let Ok(p) = which_on_path(cand) {
+                return p;
+            }
+        }
+        std::path::PathBuf::from("google-chrome")
+    }
+}
 
-    // Launch headless Chrome with debug port
-    let chrome_path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-    std::process::Command::new(chrome_path)
+fn which_on_path(name: &str) -> Result<std::path::PathBuf, ()> {
+    let path = std::env::var_os("PATH").ok_or(())?;
+    for dir in std::env::split_paths(&path) {
+        let cand = dir.join(name);
+        if cand.is_file() {
+            return Ok(cand);
+        }
+    }
+    Err(())
+}
+
+/// Launch a headless Chrome with a **fresh, empty** user-data-dir for CDP automation.
+///
+/// Cross-platform; honors `EXOPACK_CHROME_BIN` env override.
+///
+/// **Security note:** does NOT copy your real Chrome profile, cookies, or login
+/// state. Earlier versions did and that put authenticated session data in
+/// world-readable temp — that behavior is removed. If you need an authenticated
+/// Gemini session, launch your own Chrome with `--remote-debugging-port=<port>`
+/// against your real profile and skip this helper. See README.
+pub async fn launch_debug_chrome(port: u16) -> Result<String, String> {
+    let chrome_bin = default_chrome_bin();
+
+    // Fresh, empty profile dir — never the user's real profile.
+    let profile = std::env::temp_dir().join(format!("exopack-chrome-debug-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&profile);
+    std::fs::create_dir_all(&profile).map_err(|e| format!("mkdir profile: {}", e))?;
+
+    std::process::Command::new(&chrome_bin)
         .args([
             &format!("--remote-debugging-port={}", port),
-            &format!("--user-data-dir={}", dst.display()),
+            &format!("--user-data-dir={}", profile.display()),
             "--no-first-run",
+            "--no-default-browser-check",
             "--headless=new",
             "https://gemini.google.com/app",
         ])
         .spawn()
-        .map_err(|e| format!("chrome launch: {}", e))?;
+        .map_err(|e| format!("chrome launch ({}): {}", chrome_bin.display(), e))?;
 
     // Wait for CDP to be ready
     for _ in 0..20 {
