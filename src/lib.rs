@@ -44,4 +44,7 @@ pub mod standards_check;
 #[cfg(feature = "harvest")]
 pub mod harvest;
 
+#[cfg(feature = "ats_fixtures")]
+pub mod ats_fixtures;
+
 pub mod guard;

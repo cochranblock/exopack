@@ -36,6 +36,7 @@ fn print_usage() {
     eprintln!("  exopack baselines accept <project>");
     eprintln!("  exopack screenshot <url> <out.png>");
     eprintln!("  exopack compare <a.png> <b.png> [--tolerance N] [--threshold P]");
+    eprintln!("  exopack ats-fixture <vendor> [--dynamic-ids] [--late-hydration MS] [--rebuild-on-focus] [--out FILE]");
     eprintln!("  exopack govdocs [topic]");
     eprintln!("  exopack --sbom");
     eprintln!("  exopack --help | -h");
@@ -47,6 +48,8 @@ fn print_usage() {
     eprintln!("  baselines    Manage Sim 4 baselines — `accept` promotes pending → trusted (feature: screenshot)");
     eprintln!("  screenshot   Capture a single page via headless Chromium (features: screenshot,devtools)");
     eprintln!("  compare      Pixel-diff two PNGs, exit nonzero on mismatch (feature: screenshot)");
+    eprintln!("  ats-fixture  Emit a self-contained mock ATS application page HTML (feature: ats_fixtures)");
+    eprintln!("                 vendors: greenhouse, lever, workday, icims, ashby");
     eprintln!("  govdocs      Print federal compliance docs (baked into binary)");
     eprintln!();
     eprintln!("Govdocs topics:");
@@ -64,6 +67,7 @@ fn print_usage() {
     eprintln!("  exopack standards . --json");
     eprintln!("  exopack baselines accept myapp");
     eprintln!("  exopack compare current.png baseline.png");
+    eprintln!("  exopack ats-fixture workday --dynamic-ids --late-hydration 500 > workday.html");
     eprintln!("  exopack govdocs sbom");
     eprintln!("  exopack --sbom > exopack.spdx");
 }
@@ -98,6 +102,7 @@ fn main() {
         "baselines" => cmd_baselines(&args[2..]),
         "screenshot" => cmd_screenshot(&args[2..]),
         "compare" => cmd_compare(&args[2..]),
+        "ats-fixture" => cmd_ats_fixture(&args[2..]),
         _ => {
             eprintln!("Unknown command: {}. Run 'exopack --help' for usage.", sub);
             exit(1);
@@ -312,6 +317,85 @@ fn cmd_compare(args: &[String]) {
 #[cfg(not(feature = "screenshot"))]
 fn cmd_compare(_args: &[String]) {
     eprintln!("`compare` requires building with --features screenshot.");
+    exit(2);
+}
+
+// --- ats-fixture subcommand (feature: ats_fixtures) ---
+
+#[cfg(feature = "ats_fixtures")]
+fn cmd_ats_fixture(args: &[String]) {
+    use exopack::ats_fixtures::{render, AtsVendor, FixtureOpts};
+
+    if args.is_empty() {
+        eprintln!("ats-fixture <vendor> [--dynamic-ids] [--late-hydration MS] [--rebuild-on-focus] [--out FILE]");
+        eprintln!("  vendor: greenhouse | lever | workday | icims | ashby");
+        exit(1);
+    }
+
+    let vendor = match args[0].to_ascii_lowercase().as_str() {
+        "greenhouse" => AtsVendor::Greenhouse,
+        "lever" => AtsVendor::Lever,
+        "workday" => AtsVendor::Workday,
+        "icims" => AtsVendor::Icims,
+        "ashby" => AtsVendor::Ashby,
+        other => {
+            eprintln!("ats-fixture: unknown vendor `{}`. Try greenhouse|lever|workday|icims|ashby.", other);
+            exit(1);
+        }
+    };
+
+    let mut opts = FixtureOpts::default();
+    let mut out_path: Option<std::path::PathBuf> = None;
+    let mut i = 1;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--dynamic-ids" => opts.dynamic_ids = true,
+            "--rebuild-on-focus" => opts.rebuild_on_focus = true,
+            "--late-hydration" => {
+                i += 1;
+                opts.late_hydration_ms = args.get(i).and_then(|s| s.parse().ok());
+                if opts.late_hydration_ms.is_none() {
+                    eprintln!("ats-fixture: --late-hydration needs a milliseconds integer");
+                    exit(1);
+                }
+            }
+            "--out" => {
+                i += 1;
+                out_path = args.get(i).map(std::path::PathBuf::from);
+                if out_path.is_none() {
+                    eprintln!("ats-fixture: --out needs a path");
+                    exit(1);
+                }
+            }
+            other => {
+                eprintln!("ats-fixture: unknown arg `{}`", other);
+                exit(1);
+            }
+        }
+        i += 1;
+    }
+
+    let html = render(vendor, &opts);
+    match out_path {
+        Some(path) => match std::fs::write(&path, &html) {
+            Ok(_) => {
+                eprintln!("ats-fixture: wrote {} ({} bytes)", path.display(), html.len());
+            }
+            Err(e) => {
+                eprintln!("ats-fixture: write {}: {}", path.display(), e);
+                exit(1);
+            }
+        },
+        None => {
+            // Stream to stdout for piping into a file or another tool.
+            print!("{}", html);
+        }
+    }
+}
+
+#[cfg(not(feature = "ats_fixtures"))]
+fn cmd_ats_fixture(_args: &[String]) {
+    eprintln!("`ats-fixture` requires building with --features ats_fixtures.");
     exit(2);
 }
 

@@ -57,8 +57,12 @@ triple_sims = []
 devtools = ["chromiumoxide", "chromiumoxide/fetcher", "chromiumoxide/rustls", "chromiumoxide/zip8", "dirs", "futures", "tokio", "serde_json"]
 # standards_check: Rust industry standards gate for the whole portfolio
 standards_check = []
+# ats_fixtures: self-contained HTML mocks for ATS vendors (Greenhouse,
+# Lever, Workday, iCIMS, Ashby) — pure Rust, no extra deps. Used by
+# atsisbroken / kova for end-to-end browser autofill tests.
+ats_fixtures = []
 # cli: umbrella for the `exopack` binary's full subcommand set
-cli = ["triple_sims", "screenshot", "standards_check", "devtools"]
+cli = ["triple_sims", "screenshot", "standards_check", "devtools", "ats_fixtures"]
 # harvest: connect to running Chrome via CDP, automate Gemini sprite generation
 harvest = ["tokio", "futures", "serde_json", "image", "base64", "dirs", "reqwest", "tokio-tungstenite"]
 
