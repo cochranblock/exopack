@@ -5,200 +5,61 @@
   <img alt="EXOPACK - The Cochran Block" src="assets/brand/banner.svg" width="100%">
 </picture>
 
-[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-00d9ff?style=for-the-badge&labelColor=050508)](https://unlicense.org)
-[![Built with Rust](https://img.shields.io/badge/built%20with-Rust-fbbf24?style=for-the-badge&labelColor=050508)](https://www.rust-lang.org)
-[![The Cochran Block](https://img.shields.io/badge/The%20Cochran%20Block-CAGE%201CQ66-00d9ff?style=for-the-badge&labelColor=050508)](https://cochranblock.org)
-[![Veteran-Owned](https://img.shields.io/badge/Veteran--Owned-SDVOSB%20Pending-fbbf24?style=for-the-badge&labelColor=050508)](https://cochranblock.org)
+[![License: Unlicense](assets/brand/badges/license-unlicense.svg)](https://unlicense.org)
+[![Built with Rust](assets/brand/badges/built-with-rust.svg)](https://www.rust-lang.org)
+[![The Cochran Block — CAGE 1CQ66](assets/brand/badges/cage-1cq66.svg)](https://cochranblock.org)
+[![Veteran-Owned — SDVOSB Certified](assets/brand/badges/sdvosb-certified.svg)](https://cochranblock.org)
 
 > &#9656; **RUST** &#183; **HEADLESS CHROMIUM** &#183; **CRATES.IO**
 <!-- COCHRANBLOCK-BRAND-HEADER:END -->
 
-> **It's not the Mech — it's the pilot.**
->
-> This repo is part of [CochranBlock](https://cochranblock.org) — 8 Unlicense Rust repositories that power an entire company on a **single <10MB binary**, a laptop, and a **$10/month** Cloudflare tunnel. No AWS. No Kubernetes. No six-figure DevOps team. Zero cloud.
->
-> **[cochranblock.org](https://cochranblock.org)** is a live demo of this architecture. You're welcome to read every line of source code — it's all public domain.
->
-> Every repo ships with **[Proof of Artifacts](PROOF_OF_ARTIFACTS.md)** (wire diagrams, screenshots, and build output proving the work is real) and a **[Timeline of Invention](TIMELINE_OF_INVENTION.md)** (dated commit-level record of what was built, when, and why — proving human-piloted AI development, not generated spaghetti).
->
-> **Looking to cut your server bill by 90%?** → [Zero-Cloud Tech Intake Form](https://cochranblock.org/deploy)
+
+# exopack v0.2.1
+
+**Testing augmentation for Rust binaries. Two-binary model. Pure Rust.**
+
+Screenshot capture, video recording, interface harness, API mocking, TRIPLE SIMS, demo record/replay, baked demos. Used by cochranblock, kova, approuter, oakilydokily, whyyoulying, wowasticker for test binaries (`*-test`).
 
 ---
 
-# exopack
+## Documentation
 
-Testing augmentation for Rust binaries: screenshot capture, video recording, interface creation, API mocking, TRIPLE SIMS, demo record/replay, baked demos.
+This README is the entry point. The actual docs live in two source-of-truth files at the root of the repo:
 
-Used by cochranblock, kova, approuter, oakilydokily, whyyoulying, wowasticker for test binaries (`*-test`).
+- **[PROOF_OF_ARTIFACTS.md](PROOF_OF_ARTIFACTS.md)** — what exists today, status, source-linked. Build output, modules, CLI commands, Quick Start integration walkthrough, Standards Gate (14-check table), QA history. If you want to know what this project *does*, read this.
+- **[TIMELINE_OF_INVENTION.md](TIMELINE_OF_INVENTION.md)** — dated, commit-level record of what was built, when, and why. Human revelations (Triple Sims, Two-Binary Model, Sim 4 Visual Regression), AI/Human role splits per entry. If you want to know how this project *got built*, read this.
 
-## Quickstart
+Supporting docs:
+- [BACKLOG.md](BACKLOG.md) — prioritized open work
+- [ASSUMED_BREACH_THREAT_MODEL.md](ASSUMED_BREACH_THREAT_MODEL.md) — security model
+- [USER_STORY_ANALYSIS.md](USER_STORY_ANALYSIS.md) — full user walkthrough and scoring
+- [docs/testing_architecture.md](docs/testing_architecture.md) — two-binary test model
+- [docs/ROUGH_DRAFT_EXOPACK.md](docs/ROUGH_DRAFT_EXOPACK.md) — design notes
+- [docs/compression_map.md](docs/compression_map.md) — P13 token registry (f60–f116, t60–t72)
+- [govdocs/](govdocs/) — federal compliance (SBOM, SSDF, FIPS, FedRAMP, CMMC, ITAR/EAR)
 
-### 1. Add the dep
+---
 
-```toml
-# Cargo.toml in your application crate
-[dependencies]
-exopack = { version = "0.3", features = ["triple_sims", "interface"] }
-
-# Add a test binary that imports your library and runs through TRIPLE SIMS:
-[[bin]]
-name = "myapp-test"
-path = "src/bin/myapp-test.rs"
-required-features = ["tests"]
-
-[features]
-tests = []  # gate any test-only deps/code on this feature
-```
-
-### 2. Write the minimal `*-test` binary (≈10 lines)
-
-```rust
-// src/bin/myapp-test.rs
-
-// Compile-time guard: refuse to build the test binary in release profile —
-// a release+tests build would ship test internals as a production artifact.
-exopack::deny_release_with_tests!();
-
-#[tokio::main]
-async fn main() {
-    let ok = exopack::triple_sims::run(|| async {
-        // Your actual smoke test: spin up the server, hit a route, assert.
-        myapp::tests::run_smoke().await
-    }).await;
-    std::process::exit(if ok { 0 } else { 1 });
-}
-```
-
-### 3. CI: GitHub Actions
-
-```yaml
-# .github/workflows/test.yml
-name: test
-on: [push, pull_request]
-
-jobs:
-  triple-sims:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: TRIPLE SIMS gate
-        run: cargo run --bin myapp-test --features tests
-```
-
-### 4. (Optional) Visual regression in CI
-
-```rust
-// inside the test runner closure
-let report = exopack::screenshot::visual_regression(
-    "http://localhost:8080", "myapp",
-    &[("home", "/"), ("about", "/about")], 10, 1.0,
-).await;
-report.print_summary();
-report.all_passed
-```
-
-First run **stages** baselines into `~/.cache/screenshots/{os}/myapp/baselines_pending/` —
-nothing is trusted until a human runs `exopack baselines accept myapp` (or calls
-`screenshot::accept_pending_baselines`). This is deliberate; auto-promoting on first
-run lets an attacker poison your baselines.
-
-### CLI
+## Run It
 
 ```bash
-# Build the binary with the full subcommand set
-cargo install exopack --features cli
-
-exopack live-demo ./myapp --features tests   # build+run *-test with live output
-exopack standards . --json                   # 14-point standards gate (JSON or table)
-exopack baselines accept myapp               # promote pending baselines to trusted
-exopack screenshot https://example.com out.png   # one-shot capture (devtools)
-exopack compare a.png b.png                  # pixel diff, exit 0 == match
-exopack ats-fixture workday --dynamic-ids --late-hydration 500 > workday.html
-exopack ats-fixture lever --out lever.html   # 5 vendors: greenhouse|lever|workday|icims|ashby
-exopack govdocs sbom                         # baked federal compliance docs
-exopack --sbom > exopack.spdx                # machine SPDX
-```
-
-## Wire / Architecture
-
-```mermaid
-flowchart TB
-    subgraph Workspace
-        App[app binary]
-        Test["*-test binary"]
-    end
-
-    subgraph exopack
-        Screenshot[screenshot]
-        Interface[interface]
-        Mock[mock]
-        Video[video]
-        Triple[triple_sims]
-        Devtools[devtools]
-        Demo[demo]
-        BakedDemo[baked_demo]
-        Standards[standards_check]
-    end
-
-    App --> Core[shared lib]
-    Test --> Core
-    Test --> exopack
-
-    Screenshot --> |Sim 4: capture→diff| VisualRegression
-    Interface --> |spawn + HTTP| Harness
-    Mock --> |WireMock| Stub
-    Triple --> |run 3×| AllPass
-    Demo --> |record/replay| JSON
-    BakedDemo --> |CLI + HTTP| Verify
-```
-
-## Features
-
-- **screenshot** — Sim 4 visual regression: capture → baseline → pixel diff → red-highlight diff image. Auto-creates baselines on first run. Pure Rust (no Chrome for basic capture, devtools fallback for full browser)
-- **interface** — Test server harness: random-port binding, HTTP client with cookie store
-- **triple_sims** — Run test runner 3 times; all must pass. Includes live-demo and test-bin discovery
-- **devtools** — Headless Chromium via CDP: console error check, full-page screenshots (WASM-aware)
-- **mock** — WireMock for on-demand API mocking (GET/POST text/JSON, custom status codes)
-- **video** — Screen capture trait + xcap impl (always compiled; xcap requires `video` feature)
-- **demo** — Action script recording: WebClick, WebInput, ApiCall, EguiSend → JSON replay
-- **baked_demo** — Zero-input automation: exercises all CLI subcommands + HTTP endpoints
-- **standards_check** — 14-point Rust industry standards gate: clippy, fmt, audit, deny, MSRV, unsafe, docs, changelog, license, P16 test binary, allow(unused), error handling, secrets, Cargo.toml metadata. Runs against entire portfolio (10 projects, 140 checks)
-- **ats_fixtures** — Self-contained HTML mocks for 5 ATS vendors (Greenhouse, Lever, Workday, iCIMS, Ashby). Pure Rust, zero deps. Adversarial knobs: `late_hydration_ms`, `dynamic_ids`, `rebuild_on_focus`. Used for end-to-end browser-autofill tests in atsisbroken — drop a fixture into chromiumoxide via `Page::set_content` and exercise CDP without touching the network
-
-## Standards Gate (P23 Triple Lens validated)
-
-```
+cargo install exopack --features cli                           # install CLI
+cargo run -p exopack --features triple_sims -- live-demo .     # build+run *-test live
 cargo test --features standards_check portfolio_standards_gate -- --nocapture
+exopack baselines accept myapp                                 # promote pending baselines
+exopack screenshot https://example.com out.png                 # one-shot capture
+exopack ats-fixture workday --dynamic-ids > workday.html       # adversarial ATS mock
 ```
 
-14 checks per project. Pass/fail table across the portfolio. First baseline: 72/140.
+Full integration walkthrough, CLI reference, and module breakdown in [PROOF_OF_ARTIFACTS.md](PROOF_OF_ARTIFACTS.md).
 
-| Check | What it verifies |
-|-------|-----------------|
-| clippy | `cargo clippy -- -D warnings` zero warnings |
-| fmt | `cargo fmt --check` properly formatted |
-| audit | `cargo audit` no known vulnerabilities |
-| deny | `cargo deny check` license compliance |
-| msrv | `rust-version` declared in Cargo.toml |
-| unsafe | `#![forbid(unsafe_code)]` or justified usage |
-| docs | `//!` module docs in lib.rs or main.rs |
-| changelog | CHANGELOG.md or TIMELINE_OF_INVENTION.md exists |
-| license_file | LICENSE/UNLICENSE file present |
-| test_binary | P16 `*-test` binary in Cargo.toml |
-| allow_unused | No unjustified `#[allow(unused)]` |
-| error_handling | No `unwrap()` in library code |
-| secrets | No .env files or hardcoded keys committed |
-| cargo_meta | description, license, repository in Cargo.toml |
+---
 
-## Docs
+## License
 
-- [docs/testing_architecture.md](docs/testing_architecture.md) — Two-binary test model
-- [docs/ROUGH_DRAFT_EXOPACK.md](docs/ROUGH_DRAFT_EXOPACK.md) — Design notes
-- [docs/compression_map.md](docs/compression_map.md) — P13 token registry (f60–f116, t60–t72)
-- [govdocs/](govdocs/) — Federal compliance (SBOM, SSDF, FIPS, FedRAMP, CMMC, ITAR/EAR)
-- [USER_STORY_ANALYSIS.md](USER_STORY_ANALYSIS.md) — Full user walkthrough and scoring
+Unlicense (public domain). See [LICENSE](LICENSE).
+
+Built by [The Cochran Block](https://cochranblock.org). Powered by [KOVA](https://github.com/cochranblock/kova).
 <!-- COCHRANBLOCK-BRAND-FOOTER:START - generated by cochranblock/scripts/brand-stamp.sh -->
 
 ---
