@@ -61,7 +61,7 @@ flowchart TB
 
 | Metric | Value |
 |--------|-------|
-| Source LOC | 4,736 across src/ + tests/ (2026-05-13 measurement) |
+| Source LOC | 6,149 across src/ + tests/ (2026-05-18 measurement) |
 | Modules | 10 core (triple_sims, screenshot, devtools, mock, interface, video, demo, baked_demo, standards_check, ats_fixtures) + harvest + guard |
 | Public functions | 67 library + CLI (f60–f139, f170; pub fn count via grep) |
 | Public types | 14 pub struct/enum/trait + tokenized t60–t67, t70–t80 |
@@ -69,12 +69,11 @@ flowchart TB
 | Direct deps (all features) | 17 from crates.io |
 | Direct deps (standards_check) | 0 — pure std + cargo CLI |
 | MSRV | 1.85 (matches edition 2024 floor, 33ceb9e) |
-| Unit tests | 71 across screenshot (13), triple_sims (13), demo (3), video (3), standards_check (27), ats_fixtures (11), guard (1) |
-| Integration tests | 24 cases across 5 files — ats_fixtures (8, new), harvest (7, new), baked_demo (3), portfolio_standards (1), video_cfg (5) |
-| Binary size (release, ARM, with govdocs) | 370,592 bytes (362 KB) |
-| Binary size (release, Linux x86_64) | 393,288 bytes (384 KB) |
+| Unit tests | 65 (with all features; `cargo test --features "screenshot,mock,interface,triple_sims,devtools,baked_demo,harvest,standards_check,ats_fixtures"`) |
+| Integration tests | 20 cases across 5 files — ats_fixtures (8), harvest (7), baked_demo (3, 1 ignored), portfolio_standards (1), video_cfg (1) |
+| Binary size (release, Linux x86_64, `--features cli`) | 8,022,280 bytes (7.6 MB) — includes chromiumoxide (headless browser); strip=true |
 | Release profile | opt-level='z', lto=true, codegen-units=1, panic='abort', strip=true |
-| Projects using exopack | 5+ (cochranblock, kova, oakilydokily, whyyoulying, wowasticker) |
+| Projects using exopack | 6+ (cochranblock, kova, oakilydokily, whyyoulying, wowasticker, nanobyte) |
 | Architecture doc | 2,286 lines — testing philosophy, patterns, anti-patterns |
 | Compression map | P13 complete — 72 functions, 19 types, 46 fields, 1 CLI command |
 | Federal compliance docs | 12 documents in govdocs/ (SBOM, SSDF, FIPS, CMMC, supply chain audit) |

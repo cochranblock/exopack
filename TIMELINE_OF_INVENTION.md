@@ -91,6 +91,22 @@ This document exists because AI-assisted code has a trust problem. Anyone can ge
 
 ## Entries
 
+### 2026-05-18 — v0.3.0: Focusing Release — CLI Surface, Baseline Staging, Two-Binary Tripwire
+
+**What:** Shipped v0.3.0 to crates.io. Six changes landed since v0.2.1:
+
+1. **Canonical public API names** alongside P13 aliases — `triple_sims::run`, `screenshot::visual_regression`, `mock::start_server`, `interface::bind_random`, `interface::http_client`. Consumers no longer need the compression map to write readable test code.
+2. **Sim 4 baseline staging** — first-run screenshots now go to `baselines_pending/` instead of immediately becoming baselines. Caller must explicitly `accept_pending_baselines` before Sim 4 trusts them. Eliminates the silent baseline-poisoning failure mode: a blank first run can no longer corrupt the regression history.
+3. **Two-binary release tripwire** — `exopack::deny_release_with_tests!()` proc macro. A crate that enables the `tests` feature in release mode gets a compile error. Prevents shipping test code to production.
+4. **Workspace-aware `standards_check`** — `unsafe`, `allow(unused)`, and `error_handling` checks now descend into workspace member crates, not just the root. Standards gate is honest across monorepos.
+5. **CLI surface hardened** — `exopack standards`, `exopack baselines accept`, `exopack screenshot`, `exopack compare --json`. Dropped `required-features` lock on the `exopack` binary so `--help`/`--sbom`/`govdocs` work on a bare build.
+6. **`ats_fixtures` pulled into core** — five-vendor mock ATS HTML generator (Greenhouse, Lever, Workday, iCIMS, Ashby) with adversarial knobs (`late_hydration_ms`, `dynamic_ids`, `rebuild_on_focus`). Used by `atsisbroken` and `kova` for autofill regression testing.
+
+**Why:** The crate was publishing with P13 names only — readable by no one outside this project. Baseline staging fixed a silent failure mode that had let a blank screenshot overwrite a good baseline. The two-binary tripwire enforces a rule we were only tracking manually. Workspace-aware standards closed the gap between "the root passes" and "the whole codebase passes."
+
+**Commits:** `88bdc69` (v0.3 focusing release), `5c329cc` (ats_fixtures), `8b6a575` (integration tests), `7a14bb4` (SDVOSB badge)
+**AI Role:** AI implemented canonical API names, baseline staging logic, tripwire macro, workspace-aware check descent, CLI subcommands, ats_fixtures module, and integration tests. Human directed every scope decision and reviewed all outputs before merge.
+
 ### 2026-05-13 — Integration Test Surface Refresh: ats_fixtures + harvest
 
 **What:** Added two integration-test files closing the largest consumer-facing coverage gaps. `tests/ats_fixtures.rs` (8 cases) pins the cross-vendor contract for the ATS HTML generator that landed in `5c329cc` — canonical classifier vocabulary, expected-id ↔ rendered-HTML reachability, FixtureOpts orthogonal effects (`dynamic_ids`, `late_hydration_ms`, `rebuild_on_focus`), and the Lever/Ashby `full_name` collapse quirk. `tests/harvest.rs` (7 cases) covers everything in `harvest.rs` that's testable without a live Chrome: `HarvestConfig::default` shape, `build_prompt` determinism + interpolation, `default_chrome_bin` with `EXOPACK_CHROME_BIN` env override, `find_gemini_ws` Err on no CDP listener, `harvest_one` Err on unreachable ws_url. Before this entry the `harvest` module had **zero** test coverage anywhere; ats_fixtures had inline private-invariant tests but no consumer-boundary tests. PoA refreshed with real test counts (49 → 71 unit; 7 → 24 integration).
